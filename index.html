@@ -255,8 +255,7 @@
         }
 
         .virtual-joystick, .fire-button {
-            /* REMOVED: bottom, left, right from here to be set by JS */
-            position: absolute; /* ENSURE position is absolute for JS 'left'/'top' to work */
+            position: absolute;
             border-radius: 50%;
             background-color: rgba(127, 140, 141, 0.5);
             border: 2px solid #bdc3c7;
@@ -603,11 +602,12 @@
             player.mobileVy = 0;
             joystick.active = false;
             joystick.touchId = null;
-            // Reset joystick stick to center visually
             joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
             joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
             fireButtonState.active = false;
             fireButtonState.touchId = null;
+            // Ensure mobile controls are hidden if switching to PC mode from menu
+            mobileControlsDiv.style.display = 'none';
         });
 
         mobileModeButton.addEventListener('click', () => {
@@ -618,6 +618,7 @@
             keys = {};
             mouse.x = player.x;
             mouse.y = player.y;
+            // No need to show mobileControlsDiv here, it will be handled by startGame
         });
 
         startGameButton.addEventListener('click', () => {
@@ -659,7 +660,7 @@
                     joystick.active = true;
                     joystick.touchId = touch.identifier;
 
-                    let dx = touchX - joystick.baseX; // Displacement from joystick base center
+                    let dx = touchX - joystick.baseX;
                     let dy = touchY - joystick.baseY;
 
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -668,16 +669,12 @@
                         dy *= (joystick.baseRadius / distance);
                     }
                     
-                    // Position the visual joystick stick element relative to its parent (joystickBaseElement)
-                    // The stick's center should be at (joystick.baseRadius + dx, joystick.baseRadius + dy) relative to base's top-left.
-                    // The style 'left'/'top' is for the stick's top-left corner, so subtract stickRadius.
                     joystickStickElement.style.left = `${joystick.baseRadius + dx - joystick.stickRadius}px`;
                     joystickStickElement.style.top = `${joystick.baseRadius + dy - joystick.stickRadius}px`;
 
                     player.mobileVx = (dx / joystick.baseRadius) * player.speed;
                     player.mobileVy = (dy / joystick.baseRadius) * player.speed;
 
-                    // For mobile, aim towards the current touch point
                     mouse.x = touchX;
                     mouse.y = touchY;
                 }
@@ -687,13 +684,7 @@
                 if (distToFireButtonCenter < fireButtonState.radius && !fireButtonState.active) {
                     fireButtonState.active = true;
                     fireButtonState.touchId = touch.identifier;
-                    const currentTime = Date.now();
-                    if (player.currentGun && currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
-                        shootBullet();
-                        playerAmmo -= player.currentGun.ammoPerShot;
-                        ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
-                        mouse.lastShotTime = currentTime;
-                    }
+                    // No shootBullet() call here directly, it's handled in updatePlayer for continuous fire.
                 }
             }
         }
@@ -706,7 +697,7 @@
                     const touchX = touch.clientX - canvasRect.left;
                     const touchY = touch.clientY - canvasRect.top;
 
-                    let dx = touchX - joystick.baseX; // Displacement from joystick base center
+                    let dx = touchX - joystick.baseX;
                     let dy = touchY - joystick.baseY;
 
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -715,7 +706,6 @@
                         dy *= (joystick.baseRadius / distance);
                     }
 
-                    // Position the visual joystick stick element relative to its parent (joystickBaseElement)
                     joystickStickElement.style.left = `${joystick.baseRadius + dx - joystick.stickRadius}px`;
                     joystickStickElement.style.top = `${joystick.baseRadius + dy - joystick.stickRadius}px`;
 
@@ -734,7 +724,6 @@
                 if (joystick.active && joystick.touchId === touch.identifier) {
                     joystick.active = false;
                     joystick.touchId = null;
-                    // Reset stick to center of its base visually
                     joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
                     joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
                     player.mobileVx = 0;
@@ -765,7 +754,7 @@
             waveDisplay.style.display = 'none';
             ammoDisplay.style.display = 'none';
             zombiesLeftDisplay.style.display = 'none';
-            mobileControlsDiv.style.display = 'none';
+            mobileControlsDiv.style.display = 'none'; // Ensure mobile controls are hidden on menu
 
             gunCards.forEach(c => c.classList.remove('selected'));
             player.currentGun = null;
@@ -789,6 +778,8 @@
 
             if (controlMode === 'mobile') {
                 mobileControlsDiv.style.display = 'block';
+            } else {
+                mobileControlsDiv.style.display = 'none'; // Explicitly hide if PC mode
             }
 
             resetGame();
@@ -830,7 +821,7 @@
             waveDisplay.textContent = `Wave: ${currentWave}`;
             zombiesLeftDisplay.textContent = `Zombies Left: 0`;
             currentWeaponDisplay.textContent = `Weapon: ${player.currentGun ? player.currentGun.name : 'None'}`;
-            ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun ? player.currentGun.maxAmmo : '--'}`;
+            ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
             
             if (typeof player !== 'undefined' && player !== null) {
                 mouse.x = player.x;
@@ -895,10 +886,13 @@
 
             let aimAngle;
             if (controlMode === 'mobile' && (joystick.active || fireButtonState.active)) {
+                // Aim towards the touch point when in mobile mode and controls are active
                 aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
             } else if (controlMode === 'pc') {
+                // Aim towards mouse cursor in PC mode
                 aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
             } else {
+                 // Default aim (e.g., if game not started or no aiming input)
                  aimAngle = 0;
             }
 
@@ -1162,7 +1156,7 @@
                 case 'ammoRefill':
                     boxColor = '#6f42c1';
                     accentColor = '#4a2f86';
-                    iconText = '🔥';
+                    iconText = '�';
                     iconColor = '#ecf0f1';
                     break;
                 default:
@@ -1298,6 +1292,17 @@
             } else if (controlMode === 'mobile') {
                 player.x += (player.mobileVx || 0);
                 player.y += (player.mobileVy || 0);
+
+                // NEW: Handle continuous firing for mobile if fire button is active
+                if (fireButtonState.active && player.currentGun) {
+                    const currentTime = Date.now();
+                    if (currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
+                        shootBullet();
+                        playerAmmo -= player.currentGun.ammoPerShot;
+                        ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                        mouse.lastShotTime = currentTime;
+                    }
+                }
             }
 
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
@@ -1711,3 +1716,4 @@
     </script>
 </body>
 </html>
+�
