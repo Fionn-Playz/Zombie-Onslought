@@ -46,15 +46,15 @@
             background-color: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
-            justify-content: space-evenly; /* MODIFIED: Distribute space more evenly */
+            justify-content: space-evenly;
             align-items: center;
             text-align: center;
             z-index: 10;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.5s ease, visibility 0.5s ease;
-            padding: 20px; /* ADDED: Overall padding for the menu */
-            box-sizing: border-box; /* ADDED: Include padding in height/width calculation */
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .game-menu.active {
@@ -64,14 +64,14 @@
 
         .game-menu h1 {
             font-size: 2em;
-            margin-bottom: 20px; /* MODIFIED: Slightly reduced */
+            margin-bottom: 20px;
             color: #e74c3c;
             text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
         }
 
         .game-menu h2 {
             font-size: 1.5em;
-            margin-bottom: 10px; /* MODIFIED: Slightly reduced */
+            margin-bottom: 10px;
             color: #f39c12;
         }
 
@@ -85,7 +85,7 @@
             border-radius: 10px;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-            margin-top: 15px; /* MODIFIED: Slightly reduced */
+            margin-top: 15px;
             box-shadow: 0 5px 0 #229a50;
         }
 
@@ -216,8 +216,8 @@
         #controlModeSelection {
             display: flex;
             gap: 15px;
-            margin-top: 20px; /* MODIFIED: Slightly reduced */
-            margin-bottom: 5px; /* ADDED: Small margin-bottom */
+            margin-top: 20px;
+            margin-bottom: 5px;
         }
 
         #controlModeSelection button {
@@ -255,7 +255,8 @@
         }
 
         .virtual-joystick, .fire-button {
-            position: absolute;
+            /* REMOVED: bottom, left, right from here to be set by JS */
+            position: absolute; /* ENSURE position is absolute for JS 'left'/'top' to work */
             border-radius: 50%;
             background-color: rgba(127, 140, 141, 0.5);
             border: 2px solid #bdc3c7;
@@ -266,8 +267,6 @@
         .virtual-joystick {
             width: 120px;
             height: 120px;
-            bottom: 20px;
-            left: 20px;
         }
 
         .joystick-stick {
@@ -277,14 +276,11 @@
             background-color: rgba(189, 195, 199, 0.7);
             border-radius: 50%;
             border: 2px solid #ecf0f1;
-            /* Initial positioning will be set by JS */
         }
 
         .fire-button {
             width: 100px;
             height: 100px;
-            bottom: 30px;
-            right: 30px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -435,19 +431,17 @@
 
         // Virtual Joystick and Fire Button for Mobile Controls
         const joystick = {
-            baseX: 100,
-            baseY: canvas.height - 100,
+            baseX: 0, // Will be calculated in window.onload as absolute canvas center X
+            baseY: 0, // Will be calculated in window.onload as absolute canvas center Y
             baseRadius: 60,
-            stickX: 0,
-            stickY: 0,
             stickRadius: 30,
             active: false,
             touchId: null
         };
 
         const fireButtonState = {
-            x: canvas.width - 100,
-            y: canvas.height - 100,
+            x: 0, // Will be calculated in window.onload as absolute canvas center X
+            y: 0, // Will be calculated in window.onload as absolute canvas center Y
             radius: 50,
             active: false,
             touchId: null
@@ -609,6 +603,7 @@
             player.mobileVy = 0;
             joystick.active = false;
             joystick.touchId = null;
+            // Reset joystick stick to center visually
             joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
             joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
             fireButtonState.active = false;
@@ -664,10 +659,7 @@
                     joystick.active = true;
                     joystick.touchId = touch.identifier;
 
-                    const touchXRelativeToBase = touchX - (joystick.baseX - joystick.baseRadius);
-                    const touchYRelativeToBase = touchY - (joystick.baseY - joystick.baseRadius);
-
-                    let dx = touchX - joystick.baseX;
+                    let dx = touchX - joystick.baseX; // Displacement from joystick base center
                     let dy = touchY - joystick.baseY;
 
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -675,16 +667,17 @@
                         dx *= (joystick.baseRadius / distance);
                         dy *= (joystick.baseRadius / distance);
                     }
-
-                    joystick.stickX = joystick.baseRadius + dx;
-                    joystick.stickY = joystick.baseRadius + dy;
-
-                    joystickStickElement.style.left = `${joystick.stickX - joystick.stickRadius}px`;
-                    joystickStickElement.style.top = `${joystick.stickY - joystick.stickRadius}px`;
+                    
+                    // Position the visual joystick stick element relative to its parent (joystickBaseElement)
+                    // The stick's center should be at (joystick.baseRadius + dx, joystick.baseRadius + dy) relative to base's top-left.
+                    // The style 'left'/'top' is for the stick's top-left corner, so subtract stickRadius.
+                    joystickStickElement.style.left = `${joystick.baseRadius + dx - joystick.stickRadius}px`;
+                    joystickStickElement.style.top = `${joystick.baseRadius + dy - joystick.stickRadius}px`;
 
                     player.mobileVx = (dx / joystick.baseRadius) * player.speed;
                     player.mobileVy = (dy / joystick.baseRadius) * player.speed;
 
+                    // For mobile, aim towards the current touch point
                     mouse.x = touchX;
                     mouse.y = touchY;
                 }
@@ -709,12 +702,11 @@
             const canvasRect = canvas.getBoundingClientRect();
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
-                const touchX = touch.clientX - canvasRect.left;
-                const touchY = touch.clientY - canvasRect.top;
-
-                // Update joystick position
                 if (joystick.active && joystick.touchId === touch.identifier) {
-                    let dx = touchX - joystick.baseX;
+                    const touchX = touch.clientX - canvasRect.left;
+                    const touchY = touch.clientY - canvasRect.top;
+
+                    let dx = touchX - joystick.baseX; // Displacement from joystick base center
                     let dy = touchY - joystick.baseY;
 
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -723,11 +715,9 @@
                         dy *= (joystick.baseRadius / distance);
                     }
 
-                    joystick.stickX = joystick.baseRadius + dx;
-                    joystick.stickY = joystick.baseRadius + dy;
-
-                    joystickStickElement.style.left = `${joystick.stickX - joystick.stickRadius}px`;
-                    joystickStickElement.style.top = `${joystick.stickY - joystick.stickRadius}px`;
+                    // Position the visual joystick stick element relative to its parent (joystickBaseElement)
+                    joystickStickElement.style.left = `${joystick.baseRadius + dx - joystick.stickRadius}px`;
+                    joystickStickElement.style.top = `${joystick.baseRadius + dy - joystick.stickRadius}px`;
 
                     player.mobileVx = (dx / joystick.baseRadius) * player.speed;
                     player.mobileVy = (dy / joystick.baseRadius) * player.speed;
@@ -744,6 +734,7 @@
                 if (joystick.active && joystick.touchId === touch.identifier) {
                     joystick.active = false;
                     joystick.touchId = null;
+                    // Reset stick to center of its base visually
                     joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
                     joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
                     player.mobileVx = 0;
@@ -1171,7 +1162,7 @@
                 case 'ammoRefill':
                     boxColor = '#6f42c1';
                     accentColor = '#4a2f86';
-                    iconText = '�';
+                    iconText = '🔥';
                     iconColor = '#ecf0f1';
                     break;
                 default:
@@ -1693,18 +1684,26 @@
         }
 
         window.onload = function() {
-            const joystickBaseRect = joystickBaseElement.getBoundingClientRect();
-            const canvasRect = canvas.getBoundingClientRect();
+            // Calculate absolute canvas coordinates for the CENTERS of joystick base and fire button
+            // These values are based on the intended visual placement (e.g., 20px from bottom/left)
+            joystick.baseX = 20 + joystick.baseRadius; // 20px from left edge + half its width
+            joystick.baseY = canvas.height - 20 - joystick.baseRadius; // 20px from bottom edge + half its height
 
-            joystick.baseX = joystickBaseRect.left + joystick.baseRadius - canvasRect.left;
-            joystick.baseY = joystickBaseRect.top + joystick.baseRadius - canvasRect.top;
+            fireButtonState.x = canvas.width - 30 - fireButtonState.radius; // 30px from right edge + half its width
+            fireButtonState.y = canvas.height - 30 - fireButtonState.radius; // 30px from bottom edge + half its height
 
+            // Apply these calculated positions to the actual DOM elements
+            // Note: CSS 'left' and 'top' position an element's top-left corner.
+            // So, subtract the radius to get the top-left from the center.
+            joystickBaseElement.style.left = `${joystick.baseX - joystick.baseRadius}px`;
+            joystickBaseElement.style.top = `${joystick.baseY - joystick.baseRadius}px`;
+
+            fireButtonElement.style.left = `${fireButtonState.x - fireButtonState.radius}px`;
+            fireButtonElement.style.top = `${fireButtonState.y - fireButtonState.radius}px`;
+
+            // Initialize stick position relative to its parent's (joystickBase) top-left
             joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
             joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
-
-            const fireButtonRect = fireButtonElement.getBoundingClientRect();
-            fireButtonState.x = fireButtonRect.left + fireButtonState.radius - canvasRect.left;
-            fireButtonState.y = fireButtonRect.top + fireButtonState.radius - canvasRect.top;
 
             initGame();
         };
@@ -1712,4 +1711,3 @@
     </script>
 </body>
 </html>
-�
