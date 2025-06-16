@@ -10,30 +10,31 @@
 
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-color: #2c3e50; /* Dark blue-grey background */
+            background-color: #2c3e50;
             margin: 0;
-            overflow: hidden; /* Prevent scrolling */
+            overflow: hidden;
             font-family: 'Press Start 2P', cursive;
-            color: #ecf0f1; /* Light text color */
+            color: #ecf0f1;
         }
 
         #gameContainer {
             position: relative;
             width: 800px;
             height: 600px;
-            border: 5px solid #bdc3c7; /* Light grey border */
+            border: 5px solid #bdc3c7;
             border-radius: 15px;
             overflow: hidden;
-            background-color: #34495e; /* Slightly lighter blue-grey for game area */
+            background-color: #34495e;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
         }
 
         canvas {
             display: block;
-            background-color: #2c3e50; /* Dark background for the actual game */
+            background-color: #2c3e50;
         }
 
         .game-menu {
@@ -45,13 +46,15 @@
             background-color: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: space-evenly; /* MODIFIED: Distribute space more evenly */
             align-items: center;
             text-align: center;
             z-index: 10;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.5s ease, visibility 0.5s ease;
+            padding: 20px; /* ADDED: Overall padding for the menu */
+            box-sizing: border-box; /* ADDED: Include padding in height/width calculation */
         }
 
         .game-menu.active {
@@ -60,20 +63,20 @@
         }
 
         .game-menu h1 {
-            font-size: 2em; /* Reduced from 2.5em */
-            margin-bottom: 25px; /* Reduced from 30px */
-            color: #e74c3c; /* Red color for titles */
+            font-size: 2em;
+            margin-bottom: 20px; /* MODIFIED: Slightly reduced */
+            color: #e74c3c;
             text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
         }
 
         .game-menu h2 {
-            font-size: 1.5em; /* Reduced from 1.8em */
-            margin-bottom: 15px; /* Reduced from 20px */
-            color: #f39c12; /* Orange color for subtitles */
+            font-size: 1.5em;
+            margin-bottom: 10px; /* MODIFIED: Slightly reduced */
+            color: #f39c12;
         }
 
         .game-menu button {
-            background-color: #27ae60; /* Green button */
+            background-color: #27ae60;
             color: white;
             border: none;
             padding: 15px 30px;
@@ -82,12 +85,12 @@
             border-radius: 10px;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-            margin-top: 20px;
-            box-shadow: 0 5px 0 #229a50; /* Darker green shadow */
+            margin-top: 15px; /* MODIFIED: Slightly reduced */
+            box-shadow: 0 5px 0 #229a50;
         }
 
         .game-menu button:hover {
-            background-color: #2ecc71; /* Lighter green on hover */
+            background-color: #2ecc71;
             transform: translateY(-2px);
             box-shadow: 0 7px 0 #229a50;
         }
@@ -101,16 +104,16 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px; /* Reduced gap from 20px */
-            margin-top: 25px; /* Reduced from 30px */
+            gap: 15px;
+            margin-top: 25px;
         }
 
         .gun-card {
-            background-color: #34495e; /* Darker background for cards */
+            background-color: #34495e;
             border: 3px solid #bdc3c7;
             border-radius: 10px;
-            padding: 15px; /* Reduced from 20px */
-            width: 150px; /* Reduced from 180px */
+            padding: 15px;
+            width: 150px;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
@@ -119,14 +122,14 @@
 
         .gun-card h3 {
             margin-top: 0;
-            margin-bottom: 8px; /* Reduced from 10px */
-            font-size: 1.2em; /* Reduced from 1.3em */
-            color: #3498db; /* Blue for gun names */
+            margin-bottom: 8px;
+            font-size: 1.2em;
+            color: #3498db;
         }
 
         .gun-card p {
-            font-size: 0.8em; /* Reduced from 0.9em */
-            margin-bottom: 4px; /* Reduced from 5px */
+            font-size: 0.8em;
+            margin-bottom: 4px;
         }
 
         .gun-card:hover {
@@ -135,14 +138,14 @@
         }
 
         .gun-card.selected {
-            border-color: #e74c3c; /* Red border for selected gun */
+            border-color: #e74c3c;
             transform: scale(1.05);
             box-shadow: 0 15px 25px rgba(231, 76, 60, 0.6);
         }
 
         .gun-icon {
-            font-size: 1.8em; /* Reduced from 2em */
-            margin-bottom: 8px; /* Reduced from 10px */
+            font-size: 1.8em;
+            margin-bottom: 8px;
             color: #ecf0f1;
         }
 
@@ -153,47 +156,45 @@
             z-index: 5;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
         }
-        /* Adjusted positions for new Zombies Left display */
         #waveDisplay {
             top: 10px;
             left: 10px;
         }
 
-        #zombiesLeftDisplay { /* New position */
+        #zombiesLeftDisplay {
             top: 40px;
             left: 10px;
         }
 
         #grenadeCount {
-            top: 70px; /* Below zombies left counter */
+            top: 70px;
             left: 10px;
         }
 
         #gameScore {
-            top: 100px; /* Below grenade counter */
+            top: 100px;
             left: 10px;
         }
 
         #gameHealth {
-            top: 10px; /* Keep health top right */
+            top: 10px;
             right: 10px;
-            left: unset; /* Ensure it stays right */
+            left: unset;
         }
 
         #currentWeaponDisplay {
-            top: 130px; /* Below score */
+            top: 130px;
             left: 10px;
-            font-size: 1em; /* Slightly smaller for weapon name */
-            color: #f1c40f; /* Yellow for current weapon */
+            font-size: 1em;
+            color: #f1c40f;
         }
 
         #ammoDisplay {
-            top: 160px; /* Below current weapon */
+            top: 160px;
             left: 10px;
             font-size: 1em;
-            color: #3498db; /* Blue for ammo */
+            color: #3498db;
         }
-
 
         #messageBox {
             position: absolute;
@@ -209,8 +210,91 @@
             text-align: center;
             z-index: 100;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
-            display: none; /* Hidden by default */
+            display: none;
         }
+
+        #controlModeSelection {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px; /* MODIFIED: Slightly reduced */
+            margin-bottom: 5px; /* ADDED: Small margin-bottom */
+        }
+
+        #controlModeSelection button {
+            background-color: #34495e;
+            color: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        #controlModeSelection button.selected-control {
+            background-color: #27ae60;
+            border-color: #2ecc71;
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.6);
+        }
+
+        #controlModeSelection button:hover {
+            background-color: #5d6d7e;
+        }
+
+
+        #mobileControls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+            z-index: 8;
+        }
+
+        .virtual-joystick, .fire-button {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(127, 140, 141, 0.5);
+            border: 2px solid #bdc3c7;
+            touch-action: none;
+            pointer-events: auto;
+        }
+
+        .virtual-joystick {
+            width: 120px;
+            height: 120px;
+            bottom: 20px;
+            left: 20px;
+        }
+
+        .joystick-stick {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: rgba(189, 195, 199, 0.7);
+            border-radius: 50%;
+            border: 2px solid #ecf0f1;
+            /* Initial positioning will be set by JS */
+        }
+
+        .fire-button {
+            width: 100px;
+            height: 100px;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(231, 76, 60, 0.5);
+            border: 2px solid #e74c3c;
+            color: #ecf0f1;
+            font-size: 24px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
     </style>
 </head>
 <body>
@@ -248,6 +332,10 @@
                 </div>
                 <!-- Sonic Blaster removed from initial selection -->
             </div>
+            <div id="controlModeSelection">
+                <button id="pcModeButton" class="selected-control">PC Mode</button>
+                <button id="mobileModeButton">Mobile Mode</button>
+            </div>
             <button id="startGameButton" disabled>START GAME</button>
         </div>
 
@@ -258,15 +346,23 @@
             <button id="restartGameButton">RESTART</button>
         </div>
 
-        <div id="waveDisplay">Wave: 0</div> <!-- New Wave counter UI -->
-        <div id="zombiesLeftDisplay">Zombies Left: --</div> <!-- New Zombies Left counter UI -->
+        <div id="waveDisplay">Wave: 0</div>
+        <div id="zombiesLeftDisplay">Zombies Left: --</div>
         <div id="grenadeCount">Grenades: 3</div>
         <div id="gameScore">Score: 0</div>
         <div id="gameHealth">Health: 100</div>
         <div id="currentWeaponDisplay">Weapon: Pistol</div>
-        <div id="ammoDisplay">Ammo: -- / --</div> <!-- New Ammo counter UI -->
+        <div id="ammoDisplay">Ammo: -- / --</div>
 
         <div id="messageBox"></div>
+
+        <!-- Mobile Controls Overlay -->
+        <div id="mobileControls">
+            <div id="joystickBase" class="virtual-joystick">
+                <div id="joystickStick" class="joystick-stick"></div>
+            </div>
+            <div id="fireButton" class="fire-button">FIRE</div>
+        </div>
 
     </div>
 
@@ -276,71 +372,97 @@
         const ctx = canvas.getContext('2d');
 
         // --- Game Constants ---
-        // Grenade Constants
         const GRENADE_SPEED = 10;
         const GRENADE_RADIUS = 8;
-        const GRENADE_EXPLOSION_DELAY = 2000; // 2 seconds
+        const GRENADE_EXPLOSION_DELAY = 2000;
         const GRENADE_EXPLOSION_RADIUS = 100;
         const GRENADE_DAMAGE = 80;
-        const GRENADE_FRICTION = 0.98; // Friction factor for grenades (0.98 means 2% speed loss per frame)
+        const GRENADE_FRICTION = 0.98;
 
-        // Power-up Box Constants
         const POWERUP_BOX_WIDTH = 40;
         const POWERUP_BOX_HEIGHT = 40;
-        const POWERUP_BOX_HEALTH = 200; // More health than a regular zombie
-        const POWERUP_BOX_DROP_SPEED = 0.5; // Slower descent for parachute effect
-        const MIN_POWERUP_SPAWN_INTERVAL = 15000; // Min 15 seconds
-        const MAX_POWERUP_SPAWN_INTERVAL = 30000; // Max 30 seconds
+        const POWERUP_BOX_HEALTH = 200;
+        const POWERUP_BOX_DROP_SPEED = 0.5;
+        const MIN_POWERUP_SPAWN_INTERVAL = 15000;
+        const MAX_POWERUP_SPAWN_INTERVAL = 30000;
 
-        // Power-up collectable effect constants
-        const COLLECTABLE_SPEED = 15; // Speed at which power-up item flies to player
-        const COLLECTABLE_EXPLOSION_RADIUS = 30; // Small explosion radius
-        const COLLECTABLE_EXPLOSION_DAMAGE = 10; // Small damage to zombies
-        const COLLECTABLE_PUSH_FORCE = 30; // Force to push zombies away - Increased for more noticeable push
+        const COLLECTABLE_SPEED = 15;
+        const COLLECTABLE_EXPLOSION_RADIUS = 30;
+        const COLLECTABLE_EXPLOSION_DAMAGE = 10;
+        const COLLECTABLE_PUSH_FORCE = 30;
 
-        // Power-up specific effects
-        const HEALTH_PACK_AMOUNT = 30; // Health restored by health pack
-        const GRENADE_REFILL_AMOUNT = 3; // Grenades added by refill
+        const HEALTH_PACK_AMOUNT = 30;
+        const GRENADE_REFILL_AMOUNT = 3;
 
-        // Zombie Constants
         const ZOMBIE_RADIUS = 20;
         const ZOMBIE_MAX_HEALTH = 100;
         const ZOMBIE_BASE_SPEED = 0.5;
-        const ZOMBIE_SPAWN_INTERVAL = 1000; // Interval to spawn individual zombies within a wave
-        const ZOMBIE_BITE_RADIUS = 25; // How close a zombie needs to be to bite (slightly larger than player radius)
-        const ZOMBIE_BITE_DAMAGE = 10; // Damage per bite
-        const ZOMBIE_BITE_INTERVAL = 1000; // 1 second between bites
-        const ZOMBIE_LEG_AMPLITUDE = 0.8; // How much legs sway side to side
-        const ZOMBIE_LEG_SPEED = 0.05; // MODIFIED: Speed of leg animation (increased for smoother animation)
+        const ZOMBIE_SPAWN_INTERVAL = 1000;
+        const ZOMBIE_BITE_RADIUS = 25;
+        const ZOMBIE_BITE_DAMAGE = 10;
+        const ZOMBIE_BITE_INTERVAL = 1000;
+        const ZOMBIE_LEG_AMPLITUDE = 0.8;
+        const ZOMBIE_LEG_SPEED = 0.05;
 
-        // Wave Constants
-        const INTERMISSION_DURATION = 3000; // 3 seconds between waves
+        const INTERMISSION_DURATION = 3000;
 
         // --- Game State Variables ---
-        let gameState = 'start'; // 'start', 'playing', 'gameOver'
+        let gameState = 'start';
         let score = 0;
         let playerHealth = 100;
-        let grenadeCount = 3; // Initial grenade count
-        let playerAmmo = 0; // New: Current ammo for player's gun
+        let grenadeCount = 3;
+        let playerAmmo = 0;
         let zombies = [];
         let bullets = [];
-        let grenades = []; // Array to hold active grenades
-        let powerUpBoxes = []; // Array to hold power-up boxes
-        let powerUpCollectables = []; // New: Array to hold power-up items flying to player
-        let keys = {}; // To track pressed keys for player movement
+        let grenades = [];
+        let powerUpBoxes = [];
+        let powerUpCollectables = [];
+        let keys = {};
         let mouse = { x: 0, y: 0, pressed: false, lastShotTime: 0 };
 
-        // Wave-specific state
         let currentWave = 0;
-        let zombiesToSpawnThisWave = 0; // Total zombies to spawn for the current wave
-        let zombiesSpawnedThisWave = 0; // How many have been spawned so far in the current wave
-        let zombiesKilledThisWave = 0; // New: Number of zombies killed in the current wave
+        let zombiesToSpawnThisWave = 0;
+        let zombiesSpawnedThisWave = 0;
+        let zombiesKilledThisWave = 0;
         let waveInProgress = false;
         let waveIntermission = false;
         let intermissionStartTime = 0;
-        let lastZombieSpawnTime = 0; // Last time an individual zombie was spawned within a wave
-        let nextPowerUpSpawnTime = 0; // When the next power-up can spawn
+        let lastZombieSpawnTime = 0;
+        let nextPowerUpSpawnTime = 0;
 
+        let controlMode = 'pc';
+        let currentInputType = 'mouse';
+
+        // Virtual Joystick and Fire Button for Mobile Controls
+        const joystick = {
+            baseX: 100,
+            baseY: canvas.height - 100,
+            baseRadius: 60,
+            stickX: 0,
+            stickY: 0,
+            stickRadius: 30,
+            active: false,
+            touchId: null
+        };
+
+        const fireButtonState = {
+            x: canvas.width - 100,
+            y: canvas.height - 100,
+            radius: 50,
+            active: false,
+            touchId: null
+        };
+
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 15,
+            speed: 3,
+            color: '#3498db',
+            currentGun: null,
+            mobileVx: 0,
+            mobileVy: 0
+        };
 
         // UI Elements (references)
         const startMenu = document.getElementById('startMenu');
@@ -352,66 +474,64 @@
         const gameHealthDisplay = document.getElementById('gameHealth');
         const grenadeCountDisplay = document.getElementById('grenadeCount');
         const currentWeaponDisplay = document.getElementById('currentWeaponDisplay');
-        const waveDisplay = document.getElementById('waveDisplay'); // Reference to the new wave display
-        const ammoDisplay = document.getElementById('ammoDisplay'); // New: Reference to ammo display
-        const zombiesLeftDisplay = document.getElementById('zombiesLeftDisplay'); // New: Reference to zombies left display
+        const waveDisplay = document.getElementById('waveDisplay');
+        const ammoDisplay = document.getElementById('ammoDisplay');
+        const zombiesLeftDisplay = document.getElementById('zombiesLeftDisplay');
         const gunCards = document.querySelectorAll('.gun-card');
         const messageBox = document.getElementById('messageBox');
 
-        // Player Configuration
-        const player = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 15,
-            speed: 3,
-            color: '#3498db', // Blue player
-            currentGun: null // Will be set from gun selection
-        };
+        const pcModeButton = document.getElementById('pcModeButton');
+        const mobileModeButton = document.getElementById('mobileModeButton');
+        const mobileControlsDiv = document.getElementById('mobileControls');
+        const joystickBaseElement = document.getElementById('joystickBase');
+        const joystickStickElement = document.getElementById('joystickStick');
+        const fireButtonElement = document.getElementById('fireButton');
+
 
         // Gun Configurations
         const guns = {
             pistol: {
                 name: 'Pistol',
                 damage: 20,
-                fireRate: 300, // ms
+                fireRate: 300,
                 bulletSpeed: 7,
                 bulletColor: '#f39c12',
                 bulletLength: 10,
-                maxAmmo: 100, // New: Max ammo for pistol
-                ammoPerShot: 1, // New: Ammo consumed per shot
+                maxAmmo: 100,
+                ammoPerShot: 1,
                 icon: 'fas fa-hand-pistol'
             },
             shotgun: {
                 name: 'Shotgun',
                 damage: 50,
-                fireRate: 800, // ms
+                fireRate: 800,
                 bulletSpeed: 5,
                 bulletColor: '#e67e22',
                 bulletLength: 12,
-                maxAmmo: 100, // MODIFIED: Max ammo for shotgun increased to 100
-                ammoPerShot: 5, // New: Ammo consumed per shot (representing multiple pellets)
+                maxAmmo: 100,
+                ammoPerShot: 5,
                 icon: 'fas fa-pump-medical'
             },
             assaultRifle: {
                 name: 'Assault Rifle',
                 damage: 15,
-                fireRate: 100, // ms
+                fireRate: 100,
                 bulletSpeed: 9,
                 bulletColor: '#f1c40f',
                 bulletLength: 8,
-                maxAmmo: 300, // New: Max ammo for assault rifle
-                ammoPerShot: 1, // New: Ammo consumed per shot
+                maxAmmo: 300,
+                ammoPerShot: 1,
                 icon: 'fas fa-rifle'
             },
-            sonicBlaster: { // This gun is now a power-up
+            sonicBlaster: {
                 name: 'Sonic Blaster',
                 damage: 30,
-                fireRate: 25, // MODIFIED: Blast twice as fast (50 -> 25)
+                fireRate: 25,
                 bulletSpeed: 25,
                 bulletColor: '#8e44ad',
                 bulletLength: 20,
-                maxAmmo: 2000, // MODIFIED: Quadruple the ammo (500 -> 2000)
-                ammoPerShot: 1, // New: Ammo consumed per shot
+                maxAmmo: 2000,
+                ammoPerShot: 1,
                 icon: 'fas fa-bolt'
             }
         };
@@ -427,32 +547,82 @@
 
         // --- Event Listeners ---
         window.addEventListener('keydown', (e) => {
-            keys[e.code] = true;
-            if (e.code === 'KeyG' && gameState === 'playing') {
-                throwGrenade();
+            if (controlMode === 'pc' && gameState === 'playing') {
+                keys[e.code] = true;
+                if (e.code === 'KeyG') {
+                    throwGrenade();
+                }
             }
         });
 
         window.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
+            if (controlMode === 'pc' && gameState === 'playing') {
+                keys[e.code] = false;
+            }
         });
 
         canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = e.clientX - rect.left;
-            mouse.y = e.clientY - rect.top;
+            if (controlMode === 'pc' && gameState === 'playing') {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = e.clientY - rect.top;
+            }
         });
 
         canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { // Left click
+            if (controlMode === 'pc' && gameState === 'playing' && e.button === 0) {
                 mouse.pressed = true;
             }
         });
 
         canvas.addEventListener('mouseup', (e) => {
-            if (e.button === 0) { // Left click
+            if (controlMode === 'pc' && gameState === 'playing' && e.button === 0) {
                 mouse.pressed = false;
             }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (controlMode === 'mobile' && gameState === 'playing') {
+                e.preventDefault();
+                handleTouchStart(e);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (controlMode === 'mobile' && gameState === 'playing') {
+                e.preventDefault();
+                handleTouchMove(e);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (controlMode === 'mobile' && gameState === 'playing') {
+                handleTouchEnd(e);
+            }
+        });
+
+        pcModeButton.addEventListener('click', () => {
+            controlMode = 'pc';
+            currentInputType = 'mouse';
+            updateControlModeButtons();
+            player.mobileVx = 0;
+            player.mobileVy = 0;
+            joystick.active = false;
+            joystick.touchId = null;
+            joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
+            joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
+            fireButtonState.active = false;
+            fireButtonState.touchId = null;
+        });
+
+        mobileModeButton.addEventListener('click', () => {
+            controlMode = 'mobile';
+            currentInputType = 'touch';
+            updateControlModeButtons();
+            mouse.pressed = false;
+            keys = {};
+            mouse.x = player.x;
+            mouse.y = player.y;
         });
 
         startGameButton.addEventListener('click', () => {
@@ -463,9 +633,8 @@
             }
         });
 
-        // MODIFIED: Restart button now calls initGame() to go back to gun selection
         restartGameButton.addEventListener('click', () => {
-            initGame(); // Go back to the gun selection menu
+            initGame();
         });
 
         gunCards.forEach(card => {
@@ -473,46 +642,166 @@
                 gunCards.forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
                 player.currentGun = guns[card.dataset.gun];
-                playerAmmo = player.currentGun.maxAmmo; // Initialize ammo for selected gun
-                currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`; // Update weapon display
-                ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`; // Update ammo display
-                startGameButton.disabled = false; // Enable start button once gun is selected
+                playerAmmo = player.currentGun.maxAmmo;
+                currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
+                ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                startGameButton.disabled = false;
             });
         });
+
+        // --- Touch Control Logic ---
+        function handleTouchStart(e) {
+            const canvasRect = canvas.getBoundingClientRect();
+
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const touchX = touch.clientX - canvasRect.left;
+                const touchY = touch.clientY - canvasRect.top;
+
+                // Check for joystick activation
+                const distToJoystickBaseCenter = Math.sqrt(Math.pow(touchX - joystick.baseX, 2) + Math.pow(touchY - joystick.baseY, 2));
+                if (distToJoystickBaseCenter < joystick.baseRadius && !joystick.active) {
+                    joystick.active = true;
+                    joystick.touchId = touch.identifier;
+
+                    const touchXRelativeToBase = touchX - (joystick.baseX - joystick.baseRadius);
+                    const touchYRelativeToBase = touchY - (joystick.baseY - joystick.baseRadius);
+
+                    let dx = touchX - joystick.baseX;
+                    let dy = touchY - joystick.baseY;
+
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > joystick.baseRadius) {
+                        dx *= (joystick.baseRadius / distance);
+                        dy *= (joystick.baseRadius / distance);
+                    }
+
+                    joystick.stickX = joystick.baseRadius + dx;
+                    joystick.stickY = joystick.baseRadius + dy;
+
+                    joystickStickElement.style.left = `${joystick.stickX - joystick.stickRadius}px`;
+                    joystickStickElement.style.top = `${joystick.stickY - joystick.stickRadius}px`;
+
+                    player.mobileVx = (dx / joystick.baseRadius) * player.speed;
+                    player.mobileVy = (dy / joystick.baseRadius) * player.speed;
+
+                    mouse.x = touchX;
+                    mouse.y = touchY;
+                }
+
+                // Check for fire button activation
+                const distToFireButtonCenter = Math.sqrt(Math.pow(touchX - fireButtonState.x, 2) + Math.pow(touchY - fireButtonState.y, 2));
+                if (distToFireButtonCenter < fireButtonState.radius && !fireButtonState.active) {
+                    fireButtonState.active = true;
+                    fireButtonState.touchId = touch.identifier;
+                    const currentTime = Date.now();
+                    if (player.currentGun && currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
+                        shootBullet();
+                        playerAmmo -= player.currentGun.ammoPerShot;
+                        ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                        mouse.lastShotTime = currentTime;
+                    }
+                }
+            }
+        }
+
+        function handleTouchMove(e) {
+            const canvasRect = canvas.getBoundingClientRect();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const touchX = touch.clientX - canvasRect.left;
+                const touchY = touch.clientY - canvasRect.top;
+
+                // Update joystick position
+                if (joystick.active && joystick.touchId === touch.identifier) {
+                    let dx = touchX - joystick.baseX;
+                    let dy = touchY - joystick.baseY;
+
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > joystick.baseRadius) {
+                        dx *= (joystick.baseRadius / distance);
+                        dy *= (joystick.baseRadius / distance);
+                    }
+
+                    joystick.stickX = joystick.baseRadius + dx;
+                    joystick.stickY = joystick.baseRadius + dy;
+
+                    joystickStickElement.style.left = `${joystick.stickX - joystick.stickRadius}px`;
+                    joystickStickElement.style.top = `${joystick.stickY - joystick.stickRadius}px`;
+
+                    player.mobileVx = (dx / joystick.baseRadius) * player.speed;
+                    player.mobileVy = (dy / joystick.baseRadius) * player.speed;
+
+                    mouse.x = touchX;
+                    mouse.y = touchY;
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (joystick.active && joystick.touchId === touch.identifier) {
+                    joystick.active = false;
+                    joystick.touchId = null;
+                    joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
+                    joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
+                    player.mobileVx = 0;
+                    player.mobileVy = 0;
+
+                    mouse.x = player.x;
+                    mouse.y = player.y;
+                }
+                if (fireButtonState.active && fireButtonState.touchId === touch.identifier) {
+                    fireButtonState.active = false;
+                    fireButtonState.touchId = null;
+                }
+            }
+        }
+
 
         // --- Game Functions ---
 
         function initGame() {
-            gameState = 'start'; // Ensure game state is set to start
+            gameState = 'start';
             startMenu.classList.add('active');
             gameOverMenu.classList.remove('active');
-            grenadeCountDisplay.style.display = 'none';
+
             gameScoreDisplay.style.display = 'none';
             gameHealthDisplay.style.display = 'none';
+            grenadeCountDisplay.style.display = 'none';
             currentWeaponDisplay.style.display = 'none';
-            waveDisplay.style.display = 'none'; // Hide wave display initially
-            ammoDisplay.style.display = 'none'; // Hide ammo display initially
-            zombiesLeftDisplay.style.display = 'none'; // New: Hide zombies left display initially
+            waveDisplay.style.display = 'none';
+            ammoDisplay.style.display = 'none';
+            zombiesLeftDisplay.style.display = 'none';
+            mobileControlsDiv.style.display = 'none';
 
             gunCards.forEach(c => c.classList.remove('selected'));
-            player.currentGun = null; // Resets current gun
-            startGameButton.disabled = true; // Disables start button
+            player.currentGun = null;
+            startGameButton.disabled = true;
+
+            updateControlModeButtons();
         }
 
         function startGame() {
             gameState = 'playing';
             startMenu.classList.remove('active');
             gameOverMenu.classList.remove('active');
+
             gameScoreDisplay.style.display = 'block';
             gameHealthDisplay.style.display = 'block';
             grenadeCountDisplay.style.display = 'block';
             currentWeaponDisplay.style.display = 'block';
-            waveDisplay.style.display = 'block'; // Show wave display
-            ammoDisplay.style.display = 'block'; // Show ammo display
-            zombiesLeftDisplay.style.display = 'block'; // New: Show zombies left display
+            waveDisplay.style.display = 'block';
+            ammoDisplay.style.display = 'block';
+            zombiesLeftDisplay.style.display = 'block';
 
-            resetGame(); // Ensure all game variables are reset
-            startNextWave(); // Start the first wave
+            if (controlMode === 'mobile') {
+                mobileControlsDiv.style.display = 'block';
+            }
+
+            resetGame();
+            startNextWave();
             gameLoop();
         }
 
@@ -526,63 +815,86 @@
             bullets = [];
             grenades = [];
             powerUpBoxes = [];
-            powerUpCollectables = []; // Clear collectables
+            powerUpCollectables = [];
 
-            // Reset wave-specific variables
             currentWave = 0;
             zombiesToSpawnThisWave = 0;
             zombiesSpawnedThisWave = 0;
-            zombiesKilledThisWave = 0; // New: Reset zombies killed counter
+            zombiesKilledThisWave = 0;
             waveInProgress = false;
             waveIntermission = false;
             intermissionStartTime = 0;
             lastZombieSpawnTime = 0;
-            nextPowerUpSpawnTime = Date.now() + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL) + MIN_POWERUP_SPAWN_INTERVAL; // Reset for new game start
+            nextPowerUpSpawnTime = Date.now() + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL) + MIN_POWERUP_SPAWN_INTERVAL;
 
-            // Reset ammo based on initial gun selection (will be set by gun card click in initGame flow)
             if (player.currentGun) {
                 playerAmmo = player.currentGun.maxAmmo;
             } else {
-                // This case should ideally not happen if startGame only called after gun selection
-                // But as a fallback, set to 0 or a default gun's ammo
-                playerAmmo = 0; 
+                playerAmmo = 0;
             }
 
             gameScoreDisplay.textContent = `Score: ${score}`;
             gameHealthDisplay.textContent = `Health: ${playerHealth}`;
             grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
             waveDisplay.textContent = `Wave: ${currentWave}`;
-            zombiesLeftDisplay.textContent = `Zombies Left: 0`; // New: Initialize zombies left display
+            zombiesLeftDisplay.textContent = `Zombies Left: 0`;
             currentWeaponDisplay.textContent = `Weapon: ${player.currentGun ? player.currentGun.name : 'None'}`;
             ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun ? player.currentGun.maxAmmo : '--'}`;
+            
+            if (typeof player !== 'undefined' && player !== null) {
+                mouse.x = player.x;
+                mouse.y = player.y;
+            } else {
+                console.error("Critical Error: 'player' object is not defined when resetGame is called. Setting mouse to canvas center as fallback.");
+                mouse.x = canvas.width / 2;
+                mouse.y = canvas.height / 2;
+            }
             mouse.lastShotTime = 0;
+
+            player.mobileVx = 0;
+            player.mobileVy = 0;
+            joystick.active = false;
+            joystick.touchId = null;
+            joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
+            joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
+            fireButtonState.active = false;
+            fireButtonState.touchId = null;
         }
 
         function gameOver() {
             gameState = 'gameOver';
-            // Display the number of waves SURVIVED (currentWave - 1, since currentWave is incremented at the START of a wave)
             finalScoreSpan.textContent = Math.max(0, currentWave - 1);
             gameOverMenu.classList.add('active');
             gameScoreDisplay.style.display = 'none';
             gameHealthDisplay.style.display = 'none';
             grenadeCountDisplay.style.display = 'none';
             currentWeaponDisplay.style.display = 'none';
-            waveDisplay.style.display = 'none'; // Hide wave display on game over
-            ammoDisplay.style.display = 'none'; // Hide ammo display on game over
-            zombiesLeftDisplay.style.display = 'none'; // New: Hide zombies left display on game over
+            waveDisplay.style.display = 'none';
+            ammoDisplay.style.display = 'none';
+            zombiesLeftDisplay.style.display = 'none';
+            mobileControlsDiv.style.display = 'none';
         }
 
-        // Function to start the next wave
         function startNextWave() {
             currentWave++;
             waveDisplay.textContent = `Wave: ${currentWave}`;
-            // Zombie count increases per wave, with a base of 5
             zombiesToSpawnThisWave = currentWave * 5;
             zombiesSpawnedThisWave = 0;
-            zombiesKilledThisWave = 0; // New: Reset zombies killed for the new wave
+            zombiesKilledThisWave = 0;
             waveInProgress = true;
             showMessage(`WAVE ${currentWave} INCOMING!`);
         }
+
+        function updateControlModeButtons() {
+            pcModeButton.classList.remove('selected-control');
+            mobileModeButton.classList.remove('selected-control');
+            if (controlMode === 'pc') {
+                pcModeButton.classList.add('selected-control');
+            } else {
+                mobileModeButton.classList.add('selected-control');
+            }
+        }
+
 
         // --- Game Objects Drawing ---
 
@@ -590,21 +902,26 @@
             ctx.save();
             ctx.translate(player.x, player.y);
 
-            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
-            ctx.rotate(angle);
+            let aimAngle;
+            if (controlMode === 'mobile' && (joystick.active || fireButtonState.active)) {
+                aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            } else if (controlMode === 'pc') {
+                aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            } else {
+                 aimAngle = 0;
+            }
 
-            // Body
+            ctx.rotate(aimAngle);
+
             const bodyWidth = player.radius * 1.6;
             const bodyHeight = player.radius * 3;
             ctx.fillStyle = player.color;
-            ctx.fillRect(-bodyWidth / 2, -bodyHeight / 2 + player.radius * 0.5, bodyWidth, bodyHeight * 0.8); // Adjusted Y for head positioning
+            ctx.fillRect(-bodyWidth / 2, -bodyHeight / 2 + player.radius * 0.5, bodyWidth, bodyHeight * 0.8);
 
-            // Head (Sphere-like)
             ctx.beginPath();
             ctx.arc(0, -bodyHeight / 2 + player.radius * 0.5, player.radius * 0.9, 0, Math.PI * 2);
             ctx.fillStyle = player.color;
             ctx.fill();
-            // Shading on head
             const headGradient = ctx.createRadialGradient(
                 player.radius * 0.3, -bodyHeight / 2 + player.radius * 0.5 - player.radius * 0.3, player.radius * 0.1,
                 0, -bodyHeight / 2 + player.radius * 0.5, player.radius * 0.9
@@ -614,17 +931,11 @@
             ctx.fillStyle = headGradient;
             ctx.fill();
 
-
-            // Gun
-            ctx.fillStyle = '#7f8c8d'; // Grey gun color
-            // Stock
+            ctx.fillStyle = '#7f8c8d';
             ctx.fillRect(player.radius * 0.8, 10, 20, 8);
-            // Main body of gun
             ctx.fillRect(player.radius, -2, 40, 10);
-            // Barrel Tip
             ctx.fillStyle = '#c0c0c0';
             ctx.fillRect(player.radius + 40, -1, 5, 3);
-
 
             ctx.restore();
         }
@@ -633,54 +944,50 @@
             ctx.save();
             ctx.translate(zombie.x, zombie.y);
 
-            // Calculate leg position based on animation phase and speed
             const animationTime = Date.now() * ZOMBIE_LEG_SPEED * zombie.speed;
-            const legAngle = Math.sin(animationTime) * 0.4; // Angle of swing for both legs, 0.4 radians
+            const legAngle = Math.sin(animationTime) * 0.4;
 
             const legWidth = zombie.radius * 0.3;
-            const legHeight = zombie.radius * 1.2; // Legs go slightly below the body
-
-            const bodyBottomY = zombie.radius * 1.0; // Point where legs attach to body
+            const legHeight = zombie.radius * 1.2;
+            const bodyBottomY = zombie.radius * 1.0;
 
             // Left Leg
             ctx.save();
-            ctx.translate(-zombie.radius * 0.4, bodyBottomY); // Pivot point for left leg relative to zombie's center
-            ctx.rotate(legAngle); // Apply rotation
-            ctx.fillStyle = '#1e8449'; // Darker green for legs
-            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight); // Draw leg, pivot from top-center of leg
+            ctx.translate(-zombie.radius * 0.4, bodyBottomY);
+            ctx.rotate(legAngle);
+            ctx.fillStyle = '#1e8449';
+            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight);
             ctx.restore();
 
             // Right Leg
             ctx.save();
-            ctx.translate(zombie.radius * 0.4, bodyBottomY); // Pivot point for right leg relative to zombie's center
-            ctx.rotate(-legAngle); // Opposite swing
-            ctx.fillStyle = '#1e8449'; // Darker green for legs
-            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight); // Draw leg, pivot from top-center of leg
+            ctx.translate(zombie.radius * 0.4, bodyBottomY);
+            ctx.rotate(-legAngle);
+            ctx.fillStyle = '#1e8449';
+            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight);
             ctx.restore();
 
-            // Body - more organic/decayed shape
-            ctx.fillStyle = '#27ae60'; // Main green
+            // Body
+            ctx.fillStyle = '#27ae60';
             ctx.beginPath();
-            ctx.moveTo(0, -zombie.radius * 1.2); // Top of head
-            ctx.quadraticCurveTo(zombie.radius * 1.2, -zombie.radius * 0.5, zombie.radius * 0.8, zombie.radius * 1.5); // Right side
-            ctx.quadraticCurveTo(0, zombie.radius * 1.8, -zombie.radius * 0.8, zombie.radius * 1.5); // Bottom
-            ctx.quadraticCurveTo(-zombie.radius * 1.2, -zombie.radius * 0.5, 0, -zombie.radius * 1.2); // Left side
+            ctx.moveTo(0, -zombie.radius * 1.2);
+            ctx.quadraticCurveTo(zombie.radius * 1.2, -zombie.radius * 0.5, zombie.radius * 0.8, zombie.radius * 1.5);
+            ctx.quadraticCurveTo(0, zombie.radius * 1.8, -zombie.radius * 0.8, zombie.radius * 1.5);
+            ctx.quadraticCurveTo(-zombie.radius * 1.2, -zombie.radius * 0.5, 0, -zombie.radius * 1.2);
             ctx.closePath();
             ctx.fill();
 
-            // Shading on body
             const bodyGradient = ctx.createRadialGradient(0, 0, zombie.radius * 0.5, 0, 0, zombie.radius * 1.5);
             bodyGradient.addColorStop(0, 'rgba(0,0,0,0)');
             bodyGradient.addColorStop(1, 'rgba(0,0,0,0.2)');
             ctx.fillStyle = bodyGradient;
             ctx.fill();
 
-            // Head (more pronounced)
-            ctx.fillStyle = '#2ecc71'; // Lighter green for head
+            // Head
+            ctx.fillStyle = '#2ecc71';
             ctx.beginPath();
             ctx.arc(0, -zombie.radius * 1.2, zombie.radius * 0.8, 0, Math.PI * 2);
             ctx.fill();
-            // Head shading
             const headGradient = ctx.createRadialGradient(
                 zombie.radius * 0.2, -zombie.radius * 1.2 - zombie.radius * 0.2, zombie.radius * 0.1,
                 0, -zombie.radius * 1.2, zombie.radius * 0.8
@@ -690,28 +997,25 @@
             ctx.fillStyle = headGradient;
             ctx.fill();
 
-
-            // Eyes - glowing red
-            ctx.fillStyle = '#e74c3c'; // Red eyes
+            // Eyes
+            ctx.fillStyle = '#e74c3c';
             ctx.shadowBlur = 8;
             ctx.shadowColor = '#e74c3c';
             ctx.beginPath();
             ctx.arc(-zombie.radius * 0.3, -zombie.radius * 1.3, zombie.radius * 0.15, 0, Math.PI * 2);
             ctx.arc(zombie.radius * 0.3, -zombie.radius * 1.3, zombie.radius * 0.15, 0, Math.PI * 2);
             ctx.fill();
-            ctx.shadowBlur = 0; // Reset shadow
+            ctx.shadowBlur = 0;
 
-            // Mouth - decaying teeth
-            ctx.fillStyle = '#8b0000'; // Dark red for mouth cavity
+            // Mouth
+            ctx.fillStyle = '#8b0000';
             ctx.beginPath();
             ctx.ellipse(0, -zombie.radius * 0.8, zombie.radius * 0.4, zombie.radius * 0.15, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Teeth
-            ctx.fillStyle = '#ecf0f1'; // White/bone color
+            ctx.fillStyle = '#ecf0f1';
             for(let i = -2; i <= 2; i++) {
                 ctx.fillRect(i * (zombie.radius * 0.15), -zombie.radius * 0.8 - zombie.radius * 0.1, zombie.radius * 0.1, zombie.radius * 0.1);
             }
-
 
             // Health bar
             const healthBarWidth = zombie.radius * 2;
@@ -732,18 +1036,16 @@
             const angle = Math.atan2(bullet.vy, bullet.vx);
             ctx.rotate(angle);
 
-            // Main bullet body (rectangle with slight tip)
             ctx.fillStyle = bullet.color;
             ctx.beginPath();
             ctx.moveTo(0, -bullet.radius / 2);
             ctx.lineTo(bullet.length, -bullet.radius / 2);
-            ctx.lineTo(bullet.length + bullet.radius * 0.5, 0); // Pointy tip
+            ctx.lineTo(bullet.length + bullet.radius * 0.5, 0);
             ctx.lineTo(bullet.length, bullet.radius / 2);
             ctx.lineTo(0, bullet.radius / 2);
             ctx.closePath();
             ctx.fill();
 
-            // Trail effect (more dynamic)
             const trailLength = bullet.length * 1.5;
             const trailGradient = ctx.createLinearGradient(-trailLength, 0, 0, 0);
             trailGradient.addColorStop(0, `rgba(${parseInt(bullet.color.slice(1,3), 16)}, ${parseInt(bullet.color.slice(3,5), 16)}, ${parseInt(bullet.color.slice(5,7), 16)}, 0)`);
@@ -759,17 +1061,15 @@
             ctx.save();
             ctx.translate(grenade.x, grenade.y);
 
-            // Grenade body - Dark red sphere with texture/shading
             ctx.beginPath();
             ctx.arc(0, 0, grenade.radius, 0, Math.PI * 2);
             const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, grenade.radius);
-            gradient.addColorStop(0, '#a83232'); // Center color
-            gradient.addColorStop(0.7, '#6b2020'); // Mid color
-            gradient.addColorStop(1, '#4a1515'); // Edge color
+            gradient.addColorStop(0, '#a83232');
+            gradient.addColorStop(0.7, '#6b2020');
+            gradient.addColorStop(1, '#4a1515');
             ctx.fillStyle = gradient;
             ctx.fill();
 
-            // Add some texture lines
             ctx.strokeStyle = 'rgba(0,0,0,0.2)';
             ctx.lineWidth = 1;
             for(let i = 0; i < 3; i++) {
@@ -778,46 +1078,41 @@
                 ctx.stroke();
             }
 
-            // Grenade pin/handle (more detailed)
-            ctx.fillStyle = '#c0c0c0'; // Grey
-            ctx.fillRect(-2, -grenade.radius - 8, 4, 10); // Pin body
+            ctx.fillStyle = '#c0c0c0';
+            ctx.fillRect(-2, -grenade.radius - 8, 4, 10);
             ctx.beginPath();
-            ctx.arc(0, -grenade.radius - 8, 4, Math.PI, Math.PI * 2); // Handle loop
+            ctx.arc(0, -grenade.radius - 8, 4, Math.PI, Math.PI * 2);
             ctx.fill();
-            ctx.fillRect(-1, -grenade.radius - 12, 2, 4); // Small top part of pin
+            ctx.fillRect(-1, -grenade.radius - 12, 2, 4);
 
-
-            // Draw explosion effect if near explosion time
             const currentTime = Date.now();
             if (grenade.explosionTime - currentTime < 500 && grenade.explosionTime > currentTime) {
-                const progress = 1 - ((grenade.explosionTime - currentTime) / 500); // 0 to 1
+                const progress = 1 - ((grenade.explosionTime - currentTime) / 500);
                 const baseRadius = GRENADE_RADIUS * 2;
                 const currentExplosionRadius = baseRadius + (GRENADE_EXPLOSION_RADIUS - baseRadius) * progress;
 
-                // Fiery layered explosion
                 ctx.beginPath();
                 ctx.arc(0, 0, currentExplosionRadius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 165, 0, ${0.9 - progress * 0.9})`; // Orange fading out
+                ctx.fillStyle = `rgba(255, 165, 0, ${0.9 - progress * 0.9})`;
                 ctx.fill();
 
                 ctx.beginPath();
                 ctx.arc(0, 0, currentExplosionRadius * 0.7, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 69, 0, ${0.9 - progress * 0.9})`; // Red-orange fading out
+                ctx.fillStyle = `rgba(255, 69, 0, ${0.9 - progress * 0.9})`;
                 ctx.fill();
 
                 ctx.beginPath();
                 ctx.arc(0, 0, currentExplosionRadius * 0.4, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 0, ${0.9 - progress * 0.9})`; // Yellow center
+                ctx.fillStyle = `rgba(255, 255, 0, ${0.9 - progress * 0.9})`;
                 ctx.fill();
 
-                // Smoke/debris particles (simplified)
                 for(let i = 0; i < 5; i++) {
                     const particleRadius = 5 * (1 - progress);
                     const particleAngle = Math.random() * Math.PI * 2;
                     const particleDistance = currentExplosionRadius * Math.random();
                     ctx.beginPath();
                     ctx.arc(Math.cos(particleAngle) * particleDistance, Math.sin(particleAngle) * particleDistance, particleRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(100, 100, 100, ${1 - progress})`; // Grey smoke fading
+                    ctx.fillStyle = `rgba(100, 100, 100, ${1 - progress})`;
                     ctx.fill();
                 }
             }
@@ -829,13 +1124,11 @@
             ctx.save();
             ctx.translate(box.x, box.y);
 
-            // Draw parachute - more detailed canopy
-            ctx.fillStyle = '#9e73d6'; // Purple parachute
+            ctx.fillStyle = '#9e73d6';
             ctx.beginPath();
-            ctx.arc(0, -box.height / 2 - 25, 30, Math.PI, Math.PI * 2); // Canopy arc
+            ctx.arc(0, -box.height / 2 - 25, 30, Math.PI, Math.PI * 2);
             ctx.fill();
 
-            // Parachute folds
             ctx.strokeStyle = 'rgba(0,0,0,0.3)';
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -846,59 +1139,56 @@
             ctx.lineTo(15, -box.height / 2 - 25);
             ctx.stroke();
 
-            ctx.strokeStyle = '#c0c0c0'; // Grey lines
+            ctx.strokeStyle = '#c0c0c0';
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(-25, -25); // Left attachment point on canopy
-            ctx.lineTo(-box.width / 2, -box.height / 2); // Connect to box top-left
-            ctx.moveTo(25, -25); // Right attachment point on canopy
-            ctx.lineTo(box.width / 2, -box.height / 2); // Connect to box top-right
+            ctx.moveTo(-25, -25);
+            ctx.lineTo(-box.width / 2, -box.height / 2);
+            ctx.moveTo(25, -25);
+            ctx.lineTo(box.width / 2, -box.height / 2);
             ctx.stroke();
 
-            // Draw box body based on type with metallic/3D look
             let boxColor, iconText, iconColor, accentColor;
             switch(box.type) {
                 case 'sonicBlaster':
-                    boxColor = '#28a745'; // Green
-                    accentColor = '#1e7e34'; // Darker green for shading
+                    boxColor = '#28a745';
+                    accentColor = '#1e7e34';
                     iconText = '⚡';
-                    iconColor = '#f1c40f'; // Yellow
+                    iconColor = '#f1c40f';
                     break;
                 case 'healthPack':
-                    boxColor = '#dc3545'; // Red
-                    accentColor = '#b31f2f'; // Darker red
+                    boxColor = '#dc3545';
+                    accentColor = '#b31f2f';
                     iconText = '✚';
-                    iconColor = '#ecf0f1'; // White
+                    iconColor = '#ecf0f1';
                     break;
                 case 'grenadeResupply':
-                    boxColor = '#007bff'; // Blue
-                    accentColor = '#0056b3'; // Darker blue
+                    boxColor = '#007bff';
+                    accentColor = '#0056b3';
                     iconText = '💣';
-                    iconColor = '#ecf0f1'; // White
+                    iconColor = '#ecf0f1';
                     break;
-                case 'ammoRefill': // New ammo power-up
-                    boxColor = '#6f42c1'; // Purple
-                    accentColor = '#4a2f86'; // Darker purple
-                    iconText = '🔥'; // Fixed: direct Unicode emoji for flame
-                    iconColor = '#ecf0f1'; // White
+                case 'ammoRefill':
+                    boxColor = '#6f42c1';
+                    accentColor = '#4a2f86';
+                    iconText = '�';
+                    iconColor = '#ecf0f1';
                     break;
                 default:
-                    boxColor = '#6c757d'; // Default grey
+                    boxColor = '#6c757d';
                     accentColor = '#5a6268';
                     iconText = '?';
                     iconColor = '#ecf0f1';
             }
 
-            // Main box face
             ctx.fillStyle = boxColor;
             ctx.fillRect(-box.width / 2, -box.height / 2, box.width, box.height);
 
-            // Add top and side faces for 3D effect
             ctx.fillStyle = accentColor;
             ctx.beginPath();
             ctx.moveTo(-box.width / 2, -box.height / 2);
-            ctx.lineTo(-box.width / 2 + 5, -box.height / 2 - 5); // Top-left corner
-            ctx.lineTo(box.width / 2 + 5, -box.height / 2 - 5); // Top-right corner
+            ctx.lineTo(-box.width / 2 + 5, -box.height / 2 - 5);
+            ctx.lineTo(box.width / 2 + 5, -box.height / 2 - 5);
             ctx.lineTo(box.width / 2, -box.height / 2);
             ctx.closePath();
             ctx.fill();
@@ -911,23 +1201,21 @@
             ctx.closePath();
             ctx.fill();
 
-            ctx.strokeStyle = '#ecf0f1'; // White border
+            ctx.strokeStyle = '#ecf0f1';
             ctx.lineWidth = 2;
             ctx.strokeRect(-box.width / 2, -box.height / 2, box.width, box.height);
 
-            // Draw power-up icon
             ctx.fillStyle = iconColor;
             ctx.font = '20px "Press Start 2P"';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(iconText, 0, 0);
 
-            // Draw health bar for the box
             const healthBarWidth = box.width * 0.8;
             const healthBarHeight = 5;
             const healthPercentage = box.health / box.maxHealth;
             ctx.fillStyle = 'red';
-            ctx.fillRect(-healthBarWidth / 2, box.height / 2 + 10, healthBarWidth, healthBarHeight); /* Adjusted Y */
+            ctx.fillRect(-healthBarWidth / 2, box.height / 2 + 10, healthBarWidth, healthBarHeight);
             ctx.fillStyle = 'lime';
             ctx.fillRect(-healthBarWidth / 2, box.height / 2 + 10, healthBarWidth * healthPercentage, healthBarHeight);
 
@@ -938,24 +1226,23 @@
             ctx.save();
             ctx.translate(collectable.x, collectable.y);
 
-            // Draw power-up icon for the collectable
             let iconText, iconColor;
             switch(collectable.type) {
                 case 'sonicBlaster':
                     iconText = '⚡';
-                    iconColor = '#f1c40f'; // Yellow
+                    iconColor = '#f1c40f';
                     break;
                 case 'healthPack':
                     iconText = '✚';
-                    iconColor = '#ecf0f1'; // White
+                    iconColor = '#ecf0f1';
                     break;
                 case 'grenadeResupply':
                     iconText = '💣';
-                    iconColor = '#ecf0f1'; // White
+                    iconColor = '#ecf0f1';
                     break;
-                case 'ammoRefill': // New ammo power-up
-                    iconText = '🔥'; // Fixed: direct Unicode emoji for flame
-                    iconColor = '#ecf0f1'; // White
+                case 'ammoRefill':
+                    iconText = '🔥';
+                    iconColor = '#ecf0f1';
                     break;
                 default:
                     iconText = '?';
@@ -963,25 +1250,24 @@
             }
 
             ctx.fillStyle = iconColor;
-            ctx.font = '25px "Press Start 2P"'; // Slightly larger icon
+            ctx.font = '25px "Press Start 2P"';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(iconText, 0, 0);
 
-            // Draw explosion effect if active
             const currentTime = Date.now();
             if (collectable.explosionTime && currentTime < collectable.explosionTime) {
-                const progress = 1 - ((collectable.explosionTime - currentTime) / 200); // Quick 200ms explosion
+                const progress = 1 - ((collectable.explosionTime - currentTime) / 200);
                 const currentRadius = COLLECTABLE_EXPLOSION_RADIUS * progress;
 
                 ctx.beginPath();
                 ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 0, ${1 - progress})`; // Yellow fading
+                ctx.fillStyle = `rgba(255, 255, 0, ${1 - progress})`;
                 ctx.fill();
 
                 ctx.beginPath();
                 ctx.arc(0, 0, currentRadius * 0.7, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 100, 0, ${1 - progress})`; // Orange fading
+                ctx.fillStyle = `rgba(255, 100, 0, ${1 - progress})`;
                 ctx.fill();
             }
 
@@ -994,43 +1280,40 @@
             let dx = 0;
             let dy = 0;
 
-            if (keys['KeyW']) dy -= player.speed;
-            if (keys['KeyS']) dy += player.speed;
-            if (keys['KeyA']) dx -= player.speed;
-            if (keys['KeyD']) dx += player.speed;
+            if (controlMode === 'pc') {
+                if (keys['KeyW']) dy -= player.speed;
+                if (keys['KeyS']) dy += player.speed;
+                if (keys['KeyA']) dx -= player.speed;
+                if (keys['KeyD']) dx += player.speed;
 
-            // Normalize diagonal movement speed
-            if (dx !== 0 && dy !== 0) {
-                const magnitude = Math.sqrt(dx * dx + dy * dy);
-                dx = (dx / magnitude) * player.speed;
-                dy = (dy / magnitude) * player.speed;
+                if (dx !== 0 && dy !== 0) {
+                    const magnitude = Math.sqrt(dx * dx + dy * dy);
+                    dx = (dx / magnitude) * player.speed;
+                    dy = (dy / magnitude) * player.speed;
+                }
+
+                player.x += dx;
+                player.y += dy;
+
+                if (mouse.pressed && player.currentGun) {
+                    const currentTime = Date.now();
+                    if (currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
+                        shootBullet();
+                        playerAmmo -= player.currentGun.ammoPerShot;
+                        ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                        mouse.lastShotTime = currentTime;
+                    }
+                }
+            } else if (controlMode === 'mobile') {
+                player.x += (player.mobileVx || 0);
+                player.y += (player.mobileVy || 0);
             }
 
-            player.x += dx;
-            player.y += dy;
-
-            // Keep player within canvas bounds
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-
-            // Shooting logic
-            if (mouse.pressed && player.currentGun) {
-                const currentTime = Date.now();
-                // Check if enough time has passed for fire rate AND if player has ammo
-                if (currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
-                    shootBullet();
-                    playerAmmo -= player.currentGun.ammoPerShot; // Consume ammo
-                    ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`; // Update ammo UI
-                    mouse.lastShotTime = currentTime;
-                } else if (playerAmmo < player.currentGun.ammoPerShot) {
-                    // Optionally, play an "out of ammo" sound or display message
-                    // showMessage("Out of Ammo!", 500); // Short message
-                }
-            }
         }
 
         function shootBullet() {
-            // Calculate bullet direction
             const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
             const vx = Math.cos(angle) * player.currentGun.bulletSpeed;
             const vy = Math.sin(angle) * player.currentGun.bulletSpeed;
@@ -1038,12 +1321,12 @@
             bullets.push({
                 x: player.x,
                 y: player.y,
-                radius: 5, // Width/height of the bullet rectangle
+                radius: 5,
                 vx: vx,
                 vy: vy,
                 damage: player.currentGun.damage,
-                color: player.currentGun.bulletColor, // Bullet color from gun config
-                length: player.currentGun.bulletLength // Bullet length from gun config
+                color: player.currentGun.bulletColor,
+                length: player.currentGun.bulletLength
             });
         }
 
@@ -1064,8 +1347,6 @@
                     explosionTime: Date.now() + GRENADE_EXPLOSION_DELAY,
                     hasExploded: false
                 });
-            } else {
-                // showMessage("No grenades left!", 1000); // Optional: display message
             }
         }
 
@@ -1075,54 +1356,48 @@
                 bullet.x += bullet.vx;
                 bullet.y += bullet.vy;
 
-                // Remove bullets that go off-screen
                 if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
                     bullets.splice(i, 1);
-                    continue; // Skip collision checks for removed bullet
+                    continue;
                 }
 
-                // Bullet-Zombie collision (no headshots, general hitbox)
                 for (let j = zombies.length - 1; j >= 0; j--) {
                     const zombie = zombies[j];
                     const dist = Math.sqrt(Math.pow(zombie.x - bullet.x, 2) + Math.pow(zombie.y - bullet.y, 2));
                     if (dist < zombie.radius + bullet.radius) {
                         zombie.health -= bullet.damage;
-                        bullets.splice(i, 1); // Remove bullet
+                        bullets.splice(i, 1);
                         if (zombie.health <= 0) {
                             zombies.splice(j, 1);
                             score += 10;
                             gameScoreDisplay.textContent = `Score: ${score}`;
-                            zombiesKilledThisWave++; // New: Increment zombies killed
+                            zombiesKilledThisWave++;
                         }
-                        break; // Stop checking this bullet against other zombies
+                        break;
                     }
                 }
 
-                // Bullet-PowerUpBox collision
                 for (let k = powerUpBoxes.length - 1; k >= 0; k--) {
                     const box = powerUpBoxes[k];
-                    // Simple AABB collision for box and circle for bullet (can be improved)
                     if (bullet.x + bullet.radius > box.x - box.width / 2 &&
                         bullet.x - bullet.radius < box.x + box.width / 2 &&
                         bullet.y + bullet.radius > box.y - box.height / 2 &&
                         bullet.y - bullet.radius < box.y + box.height / 2)
                     {
                         box.health -= bullet.damage;
-                        bullets.splice(i, 1); // Remove bullet
+                        bullets.splice(i, 1);
                         if (box.health <= 0) {
-                            // Spawn a collectable item to fly towards player
                             powerUpCollectables.push({
                                 x: box.x,
                                 y: box.y,
                                 type: box.type,
-                                radius: 10, // Visual radius for the flying icon
-                                explosionTime: 0 // No explosion yet, set on player collision
+                                radius: 10,
+                                explosionTime: 0
                             });
-                            powerUpBoxes.splice(k, 1); // Remove box
-                            // Set time for next power-up spawn (new behavior for nextPowerUpSpawnTime)
+                            powerUpBoxes.splice(k, 1);
                             nextPowerUpSpawnTime = Date.now() + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL) + MIN_POWERUP_SPAWN_INTERVAL;
                         }
-                        break; // Stop checking this bullet against other power-up boxes
+                        break;
                     }
                 }
             }
@@ -1134,9 +1409,7 @@
                 const grenade = grenades[i];
 
                 if (currentTime >= grenade.explosionTime && !grenade.hasExploded) {
-                    // Grenade explodes!
-                    grenade.hasExploded = true; // Mark as exploded to prevent re-explosion
-                    // Damage zombies in explosion radius
+                    grenade.hasExploded = true;
                     for (let j = zombies.length - 1; j >= 0; j--) {
                         const zombie = zombies[j];
                         const dist = Math.sqrt(Math.pow(zombie.x - grenade.x, 2) + Math.pow(zombie.y - grenade.y, 2));
@@ -1146,32 +1419,26 @@
                                 zombies.splice(j, 1);
                                 score += 10;
                                 gameScoreDisplay.textContent = `Score: ${score}`;
-                                zombiesKilledThisWave++; // New: Increment zombies killed
+                                zombiesKilledThisWave++;
                             }
                         }
                     }
-                    // Remove grenade after explosion animation/effect (short delay for visual)
                     setTimeout(() => {
                         grenades.splice(i, 1);
-                    }, 200); // Remove after 200ms to allow a slight visual explosion effect
+                    }, 200);
                 } else if (!grenade.hasExploded) {
-                    // Grenade is still traveling and bouncing
                     grenade.x += grenade.vx;
                     grenade.y += grenade.vy;
 
-                    // Apply friction/drag
                     grenade.vx *= GRENADE_FRICTION;
                     grenade.vy *= GRENADE_FRICTION;
 
-                    // Bounce off walls
                     if (grenade.x - grenade.radius < 0 || grenade.x + grenade.radius > canvas.width) {
-                        grenade.vx *= -1; // Reverse horizontal velocity
-                        // Ensure it's not stuck in the wall
+                        grenade.vx *= -1;
                         grenade.x = Math.max(grenade.radius, Math.min(canvas.width - grenade.radius, grenade.x));
                     }
                     if (grenade.y - grenade.radius < 0 || grenade.y + grenade.radius > canvas.height) {
-                        grenade.vy *= -1; // Reverse vertical velocity
-                        // Ensure it's not stuck in the wall
+                        grenade.vy *= -1;
                         grenade.y = Math.max(grenade.radius, Math.min(canvas.height - grenade.radius, grenade.y));
                     }
                 }
@@ -1180,30 +1447,27 @@
 
         function spawnPowerUpBox() {
             const x = Math.random() * (canvas.width - POWERUP_BOX_WIDTH) + POWERUP_BOX_WIDTH / 2;
-            let powerUpTypesWeighted = ['sonicBlaster', 'grenadeResupply', 'ammoRefill']; // Base probability for all
+            let powerUpTypesWeighted = ['sonicBlaster', 'grenadeResupply', 'ammoRefill'];
 
-            // Adjust probability based on player health
-            if (playerHealth < 30) { // Critically low health
-                powerUpTypesWeighted.push('healthPack', 'healthPack', 'healthPack', 'healthPack', 'healthPack'); // Very high chance
-            } else if (playerHealth < 50) { // Low health
-                powerUpTypesWeighted.push('healthPack', 'healthPack', 'healthPack'); // High chance
-            } else if (playerHealth < 75) { // Moderately low health
-                powerUpTypesWeighted.push('healthPack'); // Moderate chance
+            if (playerHealth < 30) {
+                powerUpTypesWeighted.push('healthPack', 'healthPack', 'healthPack', 'healthPack', 'healthPack');
+            } else if (playerHealth < 50) {
+                powerUpTypesWeighted.push('healthPack', 'healthPack', 'healthPack');
+            } else if (playerHealth < 75) {
+                powerUpTypesWeighted.push('healthPack');
             }
 
-            // Add ammo refill chance if player ammo is low
-            if (player.currentGun && playerAmmo < player.currentGun.maxAmmo / 4) { // Less than 25% ammo
+            if (player.currentGun && playerAmmo < player.currentGun.maxAmmo / 4) {
                 powerUpTypesWeighted.push('ammoRefill', 'ammoRefill');
-            } else if (player.currentGun && playerAmmo < player.currentGun.maxAmmo / 2) { // Less than 50% ammo
+            } else if (player.currentGun && playerAmmo < player.currentGun.maxAmmo / 2) {
                 powerUpTypesWeighted.push('ammoRefill');
             }
-
 
             const randomType = powerUpTypesWeighted[Math.floor(Math.random() * powerUpTypesWeighted.length)];
 
             powerUpBoxes.push({
                 x: x,
-                y: -POWERUP_BOX_HEIGHT / 2, // Start off-screen at the top
+                y: -POWERUP_BOX_HEIGHT / 2,
                 width: POWERUP_BOX_WIDTH,
                 height: POWERUP_BOX_HEIGHT,
                 health: POWERUP_BOX_HEALTH,
@@ -1214,19 +1478,16 @@
 
         function updatePowerUpBoxes() {
             const currentTime = Date.now();
-            // Only spawn a new power-up if none are currently active and enough time has passed
             if (powerUpBoxes.length === 0 && currentTime > nextPowerUpSpawnTime) {
                 spawnPowerUpBox();
             }
 
             for (let i = powerUpBoxes.length - 1; i >= 0; i--) {
                 const box = powerUpBoxes[i];
-                box.y += POWERUP_BOX_DROP_SPEED; // Move downwards
+                box.y += POWERUP_BOX_DROP_SPEED;
 
-                // Remove if it goes off-screen (bottom)
                 if (box.y - box.height / 2 > canvas.height) {
                     powerUpBoxes.splice(i, 1);
-                    // If a power-up leaves the screen, set time for next spawn
                     nextPowerUpSpawnTime = currentTime + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL) + MIN_POWERUP_SPAWN_INTERVAL;
                 }
             }
@@ -1237,23 +1498,20 @@
                 const collectable = powerUpCollectables[i];
                 const currentTime = Date.now();
 
-                // If explosion effect is active, check if it's done
                 if (collectable.explosionTime && currentTime >= collectable.explosionTime) {
-                    powerUpCollectables.splice(i, 1); // Remove after explosion animation completes
+                    powerUpCollectables.splice(i, 1);
                     continue;
                 }
-                // If not exploding, move towards player
                 else if (!collectable.explosionTime) {
                     const dx = player.x - collectable.x;
                     const dy = player.y - collectable.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
                     if (dist < player.radius + collectable.radius) {
-                        // Collected! Apply effect, start explosion
                         switch(collectable.type) {
                             case 'sonicBlaster':
                                 player.currentGun = guns.sonicBlaster;
-                                playerAmmo = player.currentGun.maxAmmo; // Refill ammo when getting Sonic Blaster
+                                playerAmmo = player.currentGun.maxAmmo;
                                 currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
                                 ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
                                 break;
@@ -1266,41 +1524,36 @@
                                 grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
                                 break;
                             case 'ammoRefill':
-                                playerAmmo = player.currentGun.maxAmmo; // Refill current gun's ammo
+                                playerAmmo = player.currentGun.maxAmmo;
                                 ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
                                 break;
                         }
 
-                        // Trigger visual explosion at player's location
-                        collectable.x = player.x; // Move to player's location for explosion
+                        collectable.x = player.x;
                         collectable.y = player.y;
-                        collectable.explosionTime = currentTime + 200; // 200ms explosion duration
+                        collectable.explosionTime = currentTime + 200;
 
-                        // Apply damage and push to nearby zombies
                         for (let j = zombies.length - 1; j >= 0; j--) {
                             const zombie = zombies[j];
                             const zombieDist = Math.sqrt(Math.pow(zombie.x - collectable.x, 2) + Math.pow(zombie.y - collectable.y, 2));
                             if (zombieDist < COLLECTABLE_EXPLOSION_RADIUS + zombie.radius) {
-                                zombie.health -= COLLECTABLE_EXPLOSION_DAMAGE; // Small damage
+                                zombie.health -= COLLECTABLE_EXPLOSION_DAMAGE;
                                 if (zombie.health <= 0) {
                                     zombies.splice(j, 1);
                                     score += 10;
                                     gameScoreDisplay.textContent = `Score: ${score}`;
-                                    zombiesKilledThisWave++; // New: Increment zombies killed if power-up explosion kills them
+                                    zombiesKilledThisWave++;
                                 } else {
-                                    // Push zombie away
                                     const pushAngle = Math.atan2(zombie.y - collectable.y, zombie.x - collectable.x);
                                     zombie.x += Math.cos(pushAngle) * COLLECTABLE_PUSH_FORCE;
                                     zombie.y += Math.sin(pushAngle) * COLLECTABLE_PUSH_FORCE;
 
-                                    // Ensure zombie doesn't get pushed out of bounds
                                     zombie.x = Math.max(zombie.radius, Math.min(canvas.width - zombie.radius, zombie.x));
                                     zombie.y = Math.max(zombie.radius, Math.min(canvas.height - zombie.radius, zombie.y));
                                 }
                             }
                         }
                     } else {
-                        // Move towards player
                         const angle = Math.atan2(dy, dx);
                         collectable.x += Math.cos(angle) * COLLECTABLE_SPEED;
                         collectable.y += Math.sin(angle) * COLLECTABLE_SPEED;
@@ -1309,30 +1562,27 @@
             }
         }
 
-
-        // Function to spawn a single zombie
         function spawnZombie() {
-            const side = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+            const side = Math.floor(Math.random() * 4);
             let x, y;
             const radius = ZOMBIE_RADIUS;
-            // Zombie health and speed scale with the current wave
             const maxHealth = ZOMBIE_MAX_HEALTH + (currentWave * 10);
             const speed = ZOMBIE_BASE_SPEED + (currentWave * 0.1);
 
             switch (side) {
-                case 0: // Top
+                case 0:
                     x = Math.random() * canvas.width;
                     y = -radius;
                     break;
-                case 1: // Right
+                case 1:
                     x = canvas.width + radius;
                     y = Math.random() * canvas.height;
                     break;
-                case 2: // Bottom
+                case 2:
                     x = Math.random() * canvas.width;
                     y = canvas.height + radius;
                     break;
-                case 3: // Left
+                case 3:
                     x = -radius;
                     y = Math.random() * canvas.height;
                     break;
@@ -1345,32 +1595,28 @@
                 health: maxHealth,
                 maxHealth: maxHealth,
                 speed: speed,
-                lastBiteTime: 0 // New: to track when this zombie last bit the player
+                lastBiteTime: 0
             });
         }
 
-        // Main logic for managing waves
         function updateWaves() {
             const currentTime = Date.now();
 
             if (waveIntermission) {
-                // If in intermission, check if duration is over
                 if (currentTime - intermissionStartTime > INTERMISSION_DURATION) {
                     waveIntermission = false;
-                    startNextWave(); // Start the next wave
+                    startNextWave();
                 }
-                return; // Do nothing else during intermission
+                return;
             }
 
             if (waveInProgress) {
-                // Continue spawning zombies until total for wave is met
                 if (zombiesSpawnedThisWave < zombiesToSpawnThisWave && (currentTime - lastZombieSpawnTime > ZOMBIE_SPAWN_INTERVAL)) {
                     spawnZombie();
                     lastZombieSpawnTime = currentTime;
-                    zombiesSpawnedThisWave++; // Increment count of zombies *spawned* for this wave
+                    zombiesSpawnedThisWave++;
                 }
 
-                // Check if wave is complete: no zombies currently on screen AND all intended zombies for this wave have been spawned
                 if (zombies.length === 0 && zombiesSpawnedThisWave >= zombiesToSpawnThisWave) {
                     waveInProgress = false;
                     waveIntermission = true;
@@ -1385,28 +1631,36 @@
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const zombie = zombies[i];
 
-                // Move zombie towards player
                 const angle = Math.atan2(player.y - zombie.y, player.x - zombie.x);
                 zombie.x += Math.cos(angle) * zombie.speed;
                 zombie.y += Math.sin(angle) * zombie.speed;
 
-                // Collision detection: Player-Zombie for biting
                 const distPlayerZombie = Math.sqrt(Math.pow(player.x - zombie.x, 2) + Math.pow(player.y - zombie.y, 2));
-                if (distPlayerZombie < player.radius + ZOMBIE_BITE_RADIUS) { // Using ZOMBIE_BITE_RADIUS for close proximity damage
-                    // Check if zombie can bite (cooldown)
+                if (distPlayerZombie < player.radius + ZOMBIE_BITE_RADIUS) {
                     if (currentTime - zombie.lastBiteTime > ZOMBIE_BITE_INTERVAL) {
-                        playerHealth -= ZOMBIE_BITE_DAMAGE; // Player takes damage from bite
-                        gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(playerHealth))}`; // Ensure it doesn't go below 0 visually
-                        zombie.lastBiteTime = currentTime; // Reset bite cooldown for this zombie
+                        playerHealth -= ZOMBIE_BITE_DAMAGE;
+                        gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(playerHealth))}`;
+                        zombie.lastBiteTime = currentTime;
 
                         if (playerHealth <= 0) {
                             gameOver();
-                            return; // Exit if game over
+                            return;
                         }
                     }
                 }
             }
         }
+
+        function updateControlModeButtons() {
+            pcModeButton.classList.remove('selected-control');
+            mobileModeButton.classList.remove('selected-control');
+            if (controlMode === 'pc') {
+                pcModeButton.classList.add('selected-control');
+            } else {
+                mobileModeButton.classList.add('selected-control');
+            }
+        }
+
 
         // --- Main Game Loop ---
         let lastTime = 0;
@@ -1416,38 +1670,46 @@
             const deltaTime = currentTime - lastTime;
             lastTime = currentTime;
 
-            // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Update game logic
             updatePlayer(deltaTime);
             updateBullets();
             updateGrenades();
             updatePowerUpBoxes();
-            updatePowerUpCollectables(); // New: update power-up items flying to player
-            updateZombies(); // This now only handles zombie movement and player collision
-            updateWaves(); // New: handles wave progression and spawning
+            updatePowerUpCollectables();
+            updateZombies();
+            updateWaves();
 
-            // Update UI
-            zombiesLeftDisplay.textContent = `Zombies Left: ${zombiesToSpawnThisWave - zombiesKilledThisWave}`; // New: Update zombies left display
+            zombiesLeftDisplay.textContent = `Zombies Left: ${zombiesToSpawnThisWave - zombiesKilledThisWave}`;
 
-
-            // Draw game objects
             drawPlayer();
             bullets.forEach(drawBullet);
             grenades.forEach(drawGrenade);
             powerUpBoxes.forEach(drawPowerUpBox);
-            powerUpCollectables.forEach(drawPowerUpCollectable); // New: draw power-up items
+            powerUpCollectables.forEach(drawPowerUpCollectable);
             zombies.forEach(drawZombie);
 
             requestAnimationFrame(gameLoop);
         }
 
-        // Initialize game when window loads
         window.onload = function() {
+            const joystickBaseRect = joystickBaseElement.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+
+            joystick.baseX = joystickBaseRect.left + joystick.baseRadius - canvasRect.left;
+            joystick.baseY = joystickBaseRect.top + joystick.baseRadius - canvasRect.top;
+
+            joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
+            joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
+
+            const fireButtonRect = fireButtonElement.getBoundingClientRect();
+            fireButtonState.x = fireButtonRect.left + fireButtonState.radius - canvasRect.left;
+            fireButtonState.y = fireButtonRect.top + fireButtonState.radius - canvasRect.top;
+
             initGame();
         };
 
     </script>
 </body>
 </html>
+�
