@@ -289,7 +289,17 @@
             font-size: 24px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-
+        /* Style for the knife attack visual effect */
+        .knife-effect {
+            position: absolute;
+            border: 3px solid rgba(255, 255, 0, 0.8);
+            border-radius: 50%;
+            background-color: rgba(255, 255, 0, 0.2);
+            transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+            opacity: 0;
+            pointer-events: none; /* Ensure it doesn't block other inputs */
+            transform: scale(0);
+        }
     </style>
 </head>
 <body>
@@ -358,9 +368,12 @@
             </div>
             <div id="fireButton" class="fire-button">FIRE</div>
         </div>
+        <!-- Element for knife attack visual effect -->
+        <div id="knifeEffect" class="knife-effect"></div>
 
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         // Canvas and Context setup
         const canvas = document.getElementById('gameCanvas');
@@ -378,9 +391,8 @@
         const POWERUP_BOX_HEIGHT = 40;
         const POWERUP_BOX_HEALTH = 200;
         const POWERUP_BOX_DROP_SPEED = 0.5;
-        // MODIFIED: Power-up spawn intervals (shorter for more frequent drops)
-        const MIN_POWERUP_SPAWN_INTERVAL = 5000; // 5 seconds
-        const MAX_POWERUP_SPAWN_INTERVAL = 10000; // 10 seconds
+        const MIN_POWERUP_SPAWN_INTERVAL = 5000;
+        const MAX_POWERUP_SPAWN_INTERVAL = 10000;
 
         const COLLECTABLE_SPEED = 15;
         const COLLECTABLE_EXPLOSION_RADIUS = 30;
@@ -395,7 +407,6 @@
         const ZOMBIE_BASE_SPEED = 0.5;
         const ZOMBIE_SPAWN_INTERVAL = 1000;
         const ZOMBIE_BITE_RADIUS = 25;
-        // MODIFIED: ZOMBIE_BITE_DAMAGE is now 5 (was 10 / 2)
         const ZOMBIE_BITE_DAMAGE = 5; 
         const ZOMBIE_BITE_INTERVAL = 1000;
         const ZOMBIE_LEG_AMPLITUDE = 0.8;
@@ -403,37 +414,44 @@
 
         const INTERMISSION_DURATION = 3000;
 
+        // New Knife Constants
+        const KNIFE_RADIUS = 70; // Visual radius of knife attack
+        const KNIFE_COOLDOWN = 1500; // 1.5 seconds cooldown (client-side enforcement)
+        const KNIFE_EFFECT_DURATION = 150; // How long the visual effect lasts in ms
+
         // --- Game State Variables ---
         let gameState = 'start';
-        let score = 0;
-        let playerHealth = 100;
-        let grenadeCount = 3;
-        let playerAmmo = 0;
-        let zombies = [];
-        let bullets = [];
-        let grenades = [];
-        let powerUpBoxes = [];
-        let powerUpCollectables = [];
+        let score = 0; // Updated by server
+        let playerHealth = 100; // Updated by server
+        let grenadeCount = 3; // Client-side controlled for now
+        let playerAmmo = 0; // Client-side controlled (refills sent by server via powerups)
+        
+        // Multiplayer state (managed by server and synced)
+        let players = {}; // Stores all players including self
+        let myPlayerId = null; // To easily reference this client's player object
+        let zombies = {}; // Use an object for easier lookup by ID, updated by server
+        let bullets = {}; // Use an object for easier lookup by ID, updated by server
+
         let keys = {};
         let mouse = { x: 0, y: 0, pressed: false, lastShotTime: 0 };
 
-        let currentWave = 0;
-        let zombiesToSpawnThisWave = 0;
-        let zombiesSpawnedThisWave = 0;
-        let zombiesKilledThisWave = 0;
-        let waveInProgress = false;
-        let waveIntermission = false;
-        let intermissionStartTime = 0;
-        let lastZombieSpawnTime = 0;
-        let nextPowerUpSpawnTime = 0;
+        let currentWave = 0; // Will be dictated by server (future waves)
+        let zombiesToSpawnThisWave = 0; // Will be dictated by server (future waves)
+        let zombiesSpawnedThisWave = 0; // Will be dictated by server (future waves)
+        let zombiesKilledThisWave = 0; // Will be dictated by server (future waves)
+        let waveInProgress = false; // Server dictates this
+        let waveIntermission = false; // Server dictates this
+        let intermissionStartTime = 0; // Server dictates this
+        let lastZombieSpawnTime = 0; // Server dictates this
+        let nextPowerUpSpawnTime = 0; // Client-side check, but powerups are server-triggered
 
-        let controlMode = 'pc'; // Default control mode is PC, as mobile button is now hidden
+        let controlMode = 'pc';
         let currentInputType = 'mouse';
 
         // Virtual Joystick and Fire Button for Mobile Controls
         const joystick = {
-            baseX: 0, // Will be calculated in window.onload as absolute canvas center X
-            baseY: 0, // Will be calculated in window.onload as absolute canvas center Y
+            baseX: 0,
+            baseY: 0,
             baseRadius: 60,
             stickRadius: 30,
             active: false,
@@ -441,14 +459,16 @@
         };
 
         const fireButtonState = {
-            x: 0, // Will be calculated in window.onload as absolute canvas center X
-            y: 0, // Will be calculated in window.onload as absolute canvas center Y
+            x: 0,
+            y: 0,
             radius: 50,
             active: false,
             touchId: null
         };
 
-        const player = {
+        // 'player' variable now points to this client's data within the 'players' object
+        // It will be assigned in socket.on('connect') or 'currentGameState'
+        let player = { // Default structure, will be overwritten by server data
             x: canvas.width / 2,
             y: canvas.height / 2,
             radius: 15,
@@ -456,8 +476,12 @@
             color: '#3498db',
             currentGun: null,
             mobileVx: 0,
-            mobileVy: 0
+            mobileVy: 0,
+            lastKnifeTime: 0, // Client-side cooldown for visual/event throttling
+            knifeEffectActive: false, // For local visual effect
+            knifeEffectStartTime: 0
         };
+
 
         // UI Elements (references)
         const startMenu = document.getElementById('startMenu');
@@ -476,14 +500,14 @@
         const messageBox = document.getElementById('messageBox');
 
         const pcModeButton = document.getElementById('pcModeButton');
-        // mobileModeButton is no longer directly referenced as it's removed from HTML
         const mobileControlsDiv = document.getElementById('mobileControls');
         const joystickBaseElement = document.getElementById('joystickBase');
         const joystickStickElement = document.getElementById('joystickStick');
         const fireButtonElement = document.getElementById('fireButton');
+        const knifeEffectElement = document.getElementById('knifeEffect'); // Reference to the knife effect div
 
 
-        // Gun Configurations
+        // Gun Configurations (client-side representation, server has authoritative versions)
         const guns = {
             pistol: {
                 name: 'Pistol',
@@ -503,7 +527,6 @@
                 bulletSpeed: 5,
                 bulletColor: '#e67e22',
                 bulletLength: 12,
-                // MODIFIED: maxAmmo is now 1000 (100 * 10)
                 maxAmmo: 1000, 
                 ammoPerShot: 5,
                 icon: 'fas fa-pump-medical'
@@ -541,12 +564,111 @@
             }, duration);
         }
 
-        // --- Event Listeners ---
+        // --- Socket.IO Client Setup ---
+        const socket = io('http://localhost:3000'); // REMEMBER TO CHANGE THIS TO YOUR DEPLOYED SERVER URL!
+
+        socket.on('connect', () => {
+            console.log('Connected to server with ID:', socket.id);
+            myPlayerId = socket.id;
+        });
+
+        socket.on('currentGameState', (state) => {
+            players = state.players;
+            zombies = state.zombies;
+            bullets = state.bullets;
+            if (myPlayerId && players[myPlayerId]) {
+                player = players[myPlayerId]; // Ensure 'player' refers to THIS client's data
+                // Initialize client-side specific properties if they don't exist
+                if (player.lastKnifeTime === undefined) player.lastKnifeTime = 0;
+                if (player.knifeEffectActive === undefined) player.knifeEffectActive = false;
+                if (player.knifeEffectStartTime === undefined) player.knifeEffectStartTime = 0;
+            }
+        });
+
+        socket.on('newPlayer', (newPlayer) => {
+            players[newPlayer.id] = newPlayer;
+            // Initialize client-side specific properties for new players as well
+            players[newPlayer.id].lastKnifeTime = 0;
+            players[newPlayer.id].knifeEffectActive = false;
+            players[newPlayer.id].knifeEffectStartTime = 0;
+            console.log('New player joined:', newPlayer.id);
+        });
+
+        socket.on('playerDisconnected', (playerId) => {
+            delete players[playerId];
+            console.log('Player disconnected:', playerId);
+        });
+
+        socket.on('gameUpdate', (state) => {
+            // Update local game state based on server's authoritative state
+            players = state.players;
+            zombies = state.zombies;
+            bullets = state.bullets;
+
+            // Ensure your local 'player' variable always points to your most recent data
+            if (myPlayerId && players[myPlayerId]) {
+                player = players[myPlayerId];
+                gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(player.health))}`;
+                gameScoreDisplay.textContent = `Score: ${player.score}`;
+                // Grenades and ammo are client-side only for now, so don't overwrite from server
+                grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
+                ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun ? player.currentGun.maxAmmo : '--'}`;
+            } else {
+                 if (gameState === 'playing') {
+                     gameOver(); // If your player object no longer exists on server, game over
+                 }
+            }
+        });
+
+        socket.on('playerHealthUpdate', (newHealth) => {
+            if (myPlayerId && players[myPlayerId]) {
+                players[myPlayerId].health = newHealth;
+                gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(players[myPlayerId].health))}`;
+            }
+        });
+
+        socket.on('playerScoreUpdate', (newScore) => {
+            if (myPlayerId && players[myPlayerId]) {
+                players[myPlayerId].score = newScore;
+                gameScoreDisplay.textContent = `Score: ${players[myPlayerId].score}`;
+            }
+        });
+
+        socket.on('newBullet', (bulletData) => {
+            bullets[bulletData.id] = bulletData;
+        });
+
+        socket.on('removeBullet', (bulletId) => {
+            delete bullets[bulletId];
+        });
+
+        socket.on('newZombie', (zombieData) => {
+            zombies[zombieData.id] = zombieData;
+        });
+
+        socket.on('removeZombie', (zombieId) => {
+            delete zombies[zombieId];
+        });
+
+        // Listen for knife effect broadcast from server (or from local trigger)
+        socket.on('knifeEffect', (data) => {
+            // Find the player who initiated the knife effect
+            if (players[data.playerId]) {
+                players[data.playerId].knifeEffectActive = true;
+                players[data.playerId].knifeEffectStartTime = Date.now();
+            }
+        });
+
+
+        // --- Event Listeners (Client Input) ---
         window.addEventListener('keydown', (e) => {
             if (controlMode === 'pc' && gameState === 'playing') {
                 keys[e.code] = true;
                 if (e.code === 'KeyG') {
                     throwGrenade();
+                }
+                if (e.code === 'KeyM') { // New: Knife attack
+                    performKnifeAttack();
                 }
             }
         });
@@ -577,7 +699,6 @@
             }
         });
 
-        // Touch events are still attached, but controlMode will prevent them from firing in 'pc' mode
         canvas.addEventListener('touchstart', (e) => {
             if (controlMode === 'mobile' && gameState === 'playing') {
                 e.preventDefault();
@@ -599,9 +720,9 @@
         });
 
         pcModeButton.addEventListener('click', () => {
-            controlMode = 'pc'; // Ensure PC mode is selected
+            controlMode = 'pc';
             currentInputType = 'mouse';
-            updateControlModeButtons(); // Update visual selection (only PC button will show selected)
+            updateControlModeButtons();
             player.mobileVx = 0;
             player.mobileVy = 0;
             joystick.active = false;
@@ -610,21 +731,8 @@
             joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
             fireButtonState.active = false;
             fireButtonState.touchId = null;
-            mobileControlsDiv.style.display = 'none'; // Ensure mobile controls are hidden if switching to PC mode from menu
+            mobileControlsDiv.style.display = 'none';
         });
-
-        // The mobileModeButton click handler is now effectively removed as the button is hidden.
-        // If it were to be re-introduced, its logic would go here:
-        // mobileModeButton.addEventListener('click', () => {
-        //     controlMode = 'mobile';
-        //     currentInputType = 'touch';
-        //     updateControlModeButtons();
-        //     mouse.pressed = false;
-        //     keys = {};
-        //     mouse.x = player.x;
-        //     mouse.y = player.y;
-        // });
-
 
         startGameButton.addEventListener('click', () => {
             if (player.currentGun) {
@@ -642,15 +750,21 @@
             card.addEventListener('click', () => {
                 gunCards.forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
-                player.currentGun = guns[card.dataset.gun];
-                playerAmmo = player.currentGun.maxAmmo;
-                currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
-                ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
-                startGameButton.disabled = false;
+                // Update the local player's gun choice for UI/ammo display
+                if (myPlayerId && players[myPlayerId]) {
+                    players[myPlayerId].currentGun = card.dataset.gun;
+                    player.currentGun = guns[card.dataset.gun]; // Update the client's player object
+                    playerAmmo = player.currentGun.maxAmmo;
+                    currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
+                    ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                    startGameButton.disabled = false;
+                    // Also inform the server about the gun change
+                    socket.emit('playerChangeGun', { gunType: card.dataset.gun });
+                }
             });
         });
 
-        // --- Touch Control Logic ---
+        // --- Touch Control Logic (Unchanged for Knife) ---
         function handleTouchStart(e) {
             const canvasRect = canvas.getBoundingClientRect();
 
@@ -659,7 +773,6 @@
                 const touchX = touch.clientX - canvasRect.left;
                 const touchY = touch.clientY - canvasRect.top;
 
-                // Check for joystick activation
                 const distToJoystickBaseCenter = Math.sqrt(Math.pow(touchX - joystick.baseX, 2) + Math.pow(touchY - joystick.baseY, 2));
                 if (distToJoystickBaseCenter < joystick.baseRadius && !joystick.active) {
                     joystick.active = true;
@@ -684,7 +797,6 @@
                     mouse.y = touchY;
                 }
 
-                // Check for fire button activation
                 const distToFireButtonCenter = Math.sqrt(Math.pow(touchX - fireButtonState.x, 2) + Math.pow(touchY - fireButtonState.y, 2));
                 if (distToFireButtonCenter < fireButtonState.radius && !fireButtonState.active) {
                     fireButtonState.active = true;
@@ -758,13 +870,13 @@
             waveDisplay.style.display = 'none';
             ammoDisplay.style.display = 'none';
             zombiesLeftDisplay.style.display = 'none';
-            mobileControlsDiv.style.display = 'none'; // Ensure mobile controls are hidden on menu
+            mobileControlsDiv.style.display = 'none'; 
+            knifeEffectElement.style.display = 'none'; // Hide knife effect on menu
 
             gunCards.forEach(c => c.classList.remove('selected'));
-            player.currentGun = null;
+            player.currentGun = null; // Reset local gun
             startGameButton.disabled = true;
 
-            // Ensure PC mode is selected by default and its button is highlighted
             controlMode = 'pc';
             updateControlModeButtons();
         }
@@ -782,32 +894,33 @@
             ammoDisplay.style.display = 'block';
             zombiesLeftDisplay.style.display = 'block';
 
-            // Mobile controls overlay should only be visible if controlMode is explicitly 'mobile'.
-            // Since the button is hidden, this div will effectively remain hidden.
             if (controlMode === 'mobile') {
                 mobileControlsDiv.style.display = 'block';
             } else {
                 mobileControlsDiv.style.display = 'none';
             }
+            // Knife effect starts hidden, only shows on attack
+            knifeEffectElement.style.display = 'block';
 
             resetGame();
-            startNextWave();
+            // Waves are now controlled by the server, so no client-side startNextWave() here
+            // startNextWave(); // Removed
             gameLoop();
         }
 
         function resetGame() {
-            score = 0;
+            score = 0; 
             playerHealth = 100;
-            grenadeCount = 3;
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            zombies = [];
-            bullets = [];
-            grenades = [];
+            grenadeCount = 3; 
+            playerAmmo = player.currentGun ? player.currentGun.maxAmmo : 0; // Reset ammo based on selected gun
+
+            zombies = {}; // Clear local zombie objects
+            bullets = {}; // Clear local bullet objects
+            grenades = []; 
             powerUpBoxes = [];
             powerUpCollectables = [];
 
-            currentWave = 0;
+            currentWave = 0; 
             zombiesToSpawnThisWave = 0;
             zombiesSpawnedThisWave = 0;
             zombiesKilledThisWave = 0;
@@ -817,12 +930,6 @@
             lastZombieSpawnTime = 0;
             nextPowerUpSpawnTime = Date.now() + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL) + MIN_POWERUP_SPAWN_INTERVAL;
 
-            if (player.currentGun) {
-                playerAmmo = player.currentGun.maxAmmo;
-            } else {
-                playerAmmo = 0;
-            }
-
             gameScoreDisplay.textContent = `Score: ${score}`;
             gameHealthDisplay.textContent = `Health: ${playerHealth}`;
             grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
@@ -831,14 +938,22 @@
             currentWeaponDisplay.textContent = `Weapon: ${player.currentGun ? player.currentGun.name : 'None'}`;
             ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun ? player.currentGun.maxAmmo : '--'}`;
             
-            if (typeof player !== 'undefined' && player !== null) {
-                mouse.x = player.x;
-                mouse.y = player.y;
+            // Client-side player object reset (will be overwritten by server state soon)
+            if (myPlayerId && players[myPlayerId]) {
+                player = players[myPlayerId]; // Re-point to the current player object
+                player.x = canvas.width / 2;
+                player.y = canvas.height / 2;
+                player.lastKnifeTime = 0;
+                player.knifeEffectActive = false;
+                player.knifeEffectStartTime = 0;
             } else {
-                console.error("Critical Error: 'player' object is not defined when resetGame is called. Setting mouse to canvas center as fallback.");
-                mouse.x = canvas.width / 2;
-                mouse.y = canvas.height / 2;
+                // Fallback if player object isn't ready yet (should be after 'connect')
+                player.x = canvas.width / 2;
+                player.y = canvas.height / 2;
             }
+            
+            mouse.x = player.x;
+            mouse.y = player.y;
             mouse.lastShotTime = 0;
 
             player.mobileVx = 0;
@@ -853,7 +968,7 @@
 
         function gameOver() {
             gameState = 'gameOver';
-            finalScoreSpan.textContent = Math.max(0, currentWave - 1);
+            finalScoreSpan.textContent = Math.max(0, currentWave - 1); // Waves are server-side now
             gameOverMenu.classList.add('active');
             gameScoreDisplay.style.display = 'none';
             gameHealthDisplay.style.display = 'none';
@@ -863,56 +978,72 @@
             ammoDisplay.style.display = 'none';
             zombiesLeftDisplay.style.display = 'none';
             mobileControlsDiv.style.display = 'none';
+            knifeEffectElement.style.display = 'none'; // Hide knife effect on game over
         }
 
         function startNextWave() {
+            // This function is now mostly server-controlled in multiplayer
             currentWave++;
             waveDisplay.textContent = `Wave: ${currentWave}`;
-            zombiesToSpawnThisWave = currentWave * 5;
-            zombiesSpawnedThisWave = 0;
-            zombiesKilledThisWave = 0;
-            waveInProgress = true;
             showMessage(`WAVE ${currentWave} INCOMING!`);
         }
 
         function updateControlModeButtons() {
             pcModeButton.classList.remove('selected-control');
-            // No need to remove 'selected-control' from mobileModeButton as it's hidden and won't be in the DOM
             if (controlMode === 'pc') {
                 pcModeButton.classList.add('selected-control');
+            }
+        }
+
+        function performKnifeAttack() {
+            const currentTime = Date.now();
+            if (player && (currentTime - player.lastKnifeTime > KNIFE_COOLDOWN)) {
+                player.lastKnifeTime = currentTime;
+                socket.emit('knifeAttack'); // Send event to server
+
+                // Trigger local visual effect immediately for responsiveness
+                player.knifeEffectActive = true;
+                player.knifeEffectStartTime = currentTime;
+            } else {
+                showMessage("Knife on cooldown!", 500);
             }
         }
 
 
         // --- Game Objects Drawing ---
 
-        function drawPlayer() {
+        function drawPlayer(p) { // Renamed parameter from 'player' to 'p' to avoid confusion with global 'player'
             ctx.save();
-            ctx.translate(player.x, player.y);
+            ctx.translate(p.x, p.y);
 
             let aimAngle;
-            if (controlMode === 'mobile' && (joystick.active || fireButtonState.active)) {
-                aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
-            } else if (controlMode === 'pc') {
-                aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
-            } else {
-                 aimAngle = 0;
+            // The logic for aiming should still be local as mouse/touch are local inputs
+            if (p.id === myPlayerId) { // Only aim this client's player based on local mouse/touch
+                if (controlMode === 'mobile' && (joystick.active || fireButtonState.active)) {
+                    aimAngle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
+                } else if (controlMode === 'pc') {
+                    aimAngle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
+                } else {
+                    aimAngle = 0;
+                }
+            } else { // Other players, just draw them without specific aim based on THIS client's mouse
+                aimAngle = 0; // Or get their aim angle from server if transmitted
             }
-
+            
             ctx.rotate(aimAngle);
 
-            const bodyWidth = player.radius * 1.6;
-            const bodyHeight = player.radius * 3;
-            ctx.fillStyle = player.color;
-            ctx.fillRect(-bodyWidth / 2, -bodyHeight / 2 + player.radius * 0.5, bodyWidth, bodyHeight * 0.8);
+            const bodyWidth = p.radius * 1.6;
+            const bodyHeight = p.radius * 3;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-bodyWidth / 2, -bodyHeight / 2 + p.radius * 0.5, bodyWidth, bodyHeight * 0.8);
 
             ctx.beginPath();
-            ctx.arc(0, -bodyHeight / 2 + player.radius * 0.5, player.radius * 0.9, 0, Math.PI * 2);
-            ctx.fillStyle = player.color;
+            ctx.arc(0, -bodyHeight / 2 + p.radius * 0.5, p.radius * 0.9, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
             ctx.fill();
             const headGradient = ctx.createRadialGradient(
-                player.radius * 0.3, -bodyHeight / 2 + player.radius * 0.5 - player.radius * 0.3, player.radius * 0.1,
-                0, -bodyHeight / 2 + player.radius * 0.5, player.radius * 0.9
+                p.radius * 0.3, -bodyHeight / 2 + p.radius * 0.5 - p.radius * 0.3, p.radius * 0.1,
+                0, -bodyHeight / 2 + p.radius * 0.5, p.radius * 0.9
             );
             headGradient.addColorStop(0, 'rgba(255,255,255,0.3)');
             headGradient.addColorStop(1, 'rgba(0,0,0,0)');
@@ -920,12 +1051,34 @@
             ctx.fill();
 
             ctx.fillStyle = '#7f8c8d';
-            ctx.fillRect(player.radius * 0.8, 10, 20, 8);
-            ctx.fillRect(player.radius, -2, 40, 10);
+            ctx.fillRect(p.radius * 0.8, 10, 20, 8);
+            ctx.fillRect(p.radius, -2, 40, 10);
             ctx.fillStyle = '#c0c0c0';
-            ctx.fillRect(player.radius + 40, -1, 5, 3);
+            ctx.fillRect(p.radius + 40, -1, 5, 3);
 
             ctx.restore();
+
+            // Draw player ID above head
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '12px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(p.id.substring(0, 8), p.x, p.y - p.radius - 20); // Display first 8 chars of ID
+
+            // Draw knife visual effect (if active for this player)
+            if (p.knifeEffectActive && (Date.now() - p.knifeEffectStartTime < KNIFE_EFFECT_DURATION)) {
+                const progress = (Date.now() - p.knifeEffectStartTime) / KNIFE_EFFECT_DURATION;
+                const currentRadius = p.radius + KNIFE_RADIUS * progress;
+                const currentOpacity = 0.8 * (1 - progress);
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, currentRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 0, ${currentOpacity})`;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            } else {
+                p.knifeEffectActive = false; // Reset if duration passed
+            }
         }
 
         function drawZombie(zombie) {
@@ -1262,9 +1415,10 @@
             ctx.restore();
         }
 
-        // --- Game Logic Updates ---
+        // --- Game Logic Updates (client-side relevant parts) ---
 
         function updatePlayer(deltaTime) {
+            // Only update local input, server handles authoritative position
             let dx = 0;
             let dy = 0;
 
@@ -1280,369 +1434,48 @@
                     dy = (dy / magnitude) * player.speed;
                 }
 
-                player.x += dx;
-                player.y += dy;
+                // Send movement to server, server will update `player.x` and `player.y` in `gameUpdate`
+                socket.emit('playerMove', { x: player.x + dx, y: player.y + dy });
 
                 if (mouse.pressed && player.currentGun) {
                     const currentTime = Date.now();
                     if (currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
-                        shootBullet();
-                        playerAmmo -= player.currentGun.ammoPerShot;
+                        socket.emit('playerShoot', { targetX: mouse.x, targetY: mouse.y });
+                        playerAmmo -= player.currentGun.ammoPerShot; 
                         ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
-                        mouse.lastShotTime = currentTime;
+                        mouse.lastShotTime = currentTime; 
                     }
                 }
             } else if (controlMode === 'mobile') {
-                player.x += (player.mobileVx || 0);
-                player.y += (player.mobileVy || 0);
+                // Send mobile movement to server
+                socket.emit('playerMove', { x: player.x + (player.mobileVx || 0), y: player.y + (player.mobileVy || 0) });
 
                 if (fireButtonState.active && player.currentGun) {
                     const currentTime = Date.now();
                     if (currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
-                        shootBullet();
+                        socket.emit('playerShoot', { targetX: mouse.x, targetY: mouse.y });
                         playerAmmo -= player.currentGun.ammoPerShot;
                         ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
                         mouse.lastShotTime = currentTime;
                     }
                 }
             }
-
+            // Client-side clamping (server will also do this authoritatively)
             player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
         }
 
-        function shootBullet() {
-            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
-            const vx = Math.cos(angle) * player.currentGun.bulletSpeed;
-            const vy = Math.sin(angle) * player.currentGun.bulletSpeed;
-
-            bullets.push({
-                x: player.x,
-                y: player.y,
-                radius: 5,
-                vx: vx,
-                vy: vy,
-                damage: player.currentGun.damage,
-                color: player.currentGun.bulletColor,
-                length: player.currentGun.bulletLength
-            });
-        }
-
-        function throwGrenade() {
-            if (grenadeCount > 0) {
-                grenadeCount--;
-                grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
-                const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
-                const vx = Math.cos(angle) * GRENADE_SPEED;
-                const vy = Math.sin(angle) * GRENADE_SPEED;
-
-                grenades.push({
-                    x: player.x,
-                    y: player.y,
-                    vx: vx,
-                    vy: vy,
-                    radius: GRENADE_RADIUS,
-                    explosionTime: Date.now() + GRENADE_EXPLOSION_DELAY,
-                    hasExploded: false
-                });
-            }
-        }
-
-        function updateBullets() {
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                const bullet = bullets[i];
-                bullet.x += bullet.vx;
-                bullet.y += bullet.vy;
-
-                if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
-                    bullets.splice(i, 1);
-                    continue;
-                }
-
-                for (let j = zombies.length - 1; j >= 0; j--) {
-                    const zombie = zombies[j];
-                    const dist = Math.sqrt(Math.pow(zombie.x - bullet.x, 2) + Math.pow(zombie.y - bullet.y, 2));
-                    if (dist < zombie.radius + bullet.radius) {
-                        zombie.health -= bullet.damage;
-                        bullets.splice(i, 1);
-                        if (zombie.health <= 0) {
-                            zombies.splice(j, 1);
-                            score += 10;
-                            gameScoreDisplay.textContent = `Score: ${score}`;
-                            zombiesKilledThisWave++;
-                        }
-                        break;
-                    }
-                }
-
-                for (let k = powerUpBoxes.length - 1; k >= 0; k--) {
-                    const box = powerUpBoxes[k];
-                    if (bullet.x + bullet.radius > box.x - box.width / 2 &&
-                        bullet.x - bullet.radius < box.x + box.width / 2 &&
-                        bullet.y + bullet.radius > box.y - box.height / 2 &&
-                        bullet.y - bullet.radius < box.y + box.height / 2)
-                    {
-                        box.health -= bullet.damage;
-                        bullets.splice(i, 1);
-                        if (box.health <= 0) {
-                            powerUpCollectables.push({
-                                x: box.x,
-                                y: box.y,
-                                type: box.type,
-                                radius: 10,
-                                explosionTime: 0
-                            });
-                            powerUpBoxes.splice(k, 1);
-                            nextPowerUpSpawnTime = Date.now() + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL) + MIN_POWERUP_SPAWN_INTERVAL;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        function updateGrenades() {
-            const currentTime = Date.now();
-            for (let i = grenades.length - 1; i >= 0; i--) {
-                const grenade = grenades[i];
-
-                if (currentTime >= grenade.explosionTime && !grenade.hasExploded) {
-                    grenade.hasExploded = true;
-                    for (let j = zombies.length - 1; j >= 0; j--) {
-                        const zombie = zombies[j];
-                        const dist = Math.sqrt(Math.pow(zombie.x - grenade.x, 2) + Math.pow(zombie.y - grenade.y, 2));
-                        if (dist < GRENADE_EXPLOSION_RADIUS + zombie.radius) {
-                            zombie.health -= GRENADE_DAMAGE;
-                            if (zombie.health <= 0) {
-                                zombies.splice(j, 1);
-                                score += 10;
-                                gameScoreDisplay.textContent = `Score: ${score}`;
-                                zombiesKilledThisWave++;
-                            }
-                        }
-                    }
-                    setTimeout(() => {
-                        grenades.splice(i, 1);
-                    }, 200);
-                } else if (!grenade.hasExploded) {
-                    grenade.x += grenade.vx;
-                    grenade.y += grenade.vy;
-
-                    grenade.vx *= GRENADE_FRICTION;
-                    grenade.vy *= GRENADE_FRICTION;
-
-                    if (grenade.x - grenade.radius < 0 || grenade.x + grenade.radius > canvas.width) {
-                        grenade.vx *= -1;
-                        grenade.x = Math.max(grenade.radius, Math.min(canvas.width - grenade.radius, grenade.x));
-                    }
-                    if (grenade.y - grenade.radius < 0 || grenade.y + grenade.radius > canvas.height) {
-                        grenade.vy *= -1;
-                        grenade.y = Math.max(grenade.radius, Math.min(canvas.height - grenade.radius, grenade.y));
-                    }
-                }
-            }
-        }
-
-        function spawnPowerUpBox() {
-            const x = Math.random() * (canvas.width - POWERUP_BOX_WIDTH) + POWERUP_BOX_WIDTH / 2;
-            // Removed redundant health/ammo checks to make all powerups appear more often
-            let powerUpTypesWeighted = ['sonicBlaster', 'grenadeResupply', 'ammoRefill', 'healthPack']; 
-            
-            const randomType = powerUpTypesWeighted[Math.floor(Math.random() * powerUpTypesWeighted.length)];
-
-            powerUpBoxes.push({
-                x: x,
-                y: -POWERUP_BOX_HEIGHT / 2,
-                width: POWERUP_BOX_WIDTH,
-                height: POWERUP_BOX_HEIGHT,
-                health: POWERUP_BOX_HEALTH,
-                maxHealth: POWERUP_BOX_HEALTH,
-                type: randomType
-            });
-        }
-
-        function updatePowerUpBoxes() {
-            const currentTime = Date.now();
-            if (powerUpBoxes.length === 0 && currentTime > nextPowerUpSpawnTime) {
-                spawnPowerUpBox();
-            }
-
-            for (let i = powerUpBoxes.length - 1; i >= 0; i--) {
-                const box = powerUpBoxes[i];
-                box.y += POWERUP_BOX_DROP_SPEED;
-
-                if (box.y - box.height / 2 > canvas.height) {
-                    powerUpBoxes.splice(i, 1);
-                    nextPowerUpSpawnTime = currentTime + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL) + MIN_POWERUP_SPAWN_INTERVAL;
-                }
-            }
-        }
-
-        function updatePowerUpCollectables() {
-            for (let i = powerUpCollectables.length - 1; i >= 0; i--) {
-                const collectable = powerUpCollectables[i];
-                const currentTime = Date.now();
-
-                if (collectable.explosionTime && currentTime >= collectable.explosionTime) {
-                    powerUpCollectables.splice(i, 1);
-                    continue;
-                }
-                else if (!collectable.explosionTime) {
-                    const dx = player.x - collectable.x;
-                    const dy = player.y - collectable.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < player.radius + collectable.radius) {
-                        switch(collectable.type) {
-                            case 'sonicBlaster':
-                                player.currentGun = guns.sonicBlaster;
-                                playerAmmo = player.currentGun.maxAmmo;
-                                currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
-                                ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
-                                break;
-                            case 'healthPack':
-                                playerHealth = Math.min(100, playerHealth + HEALTH_PACK_AMOUNT);
-                                gameHealthDisplay.textContent = `Health: ${Math.floor(playerHealth)}`;
-                                break;
-                            case 'grenadeResupply':
-                                grenadeCount += GRENADE_REFILL_AMOUNT;
-                                grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
-                                break;
-                            case 'ammoRefill':
-                                playerAmmo = player.currentGun.maxAmmo;
-                                ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
-                                break;
-                        }
-
-                        collectable.x = player.x;
-                        collectable.y = player.y;
-                        collectable.explosionTime = currentTime + 200;
-
-                        for (let j = zombies.length - 1; j >= 0; j--) {
-                            const zombie = zombies[j];
-                            const zombieDist = Math.sqrt(Math.pow(zombie.x - collectable.x, 2) + Math.pow(zombie.y - collectable.y, 2));
-                            if (zombieDist < COLLECTABLE_EXPLOSION_RADIUS + zombie.radius) {
-                                zombie.health -= COLLECTABLE_EXPLOSION_DAMAGE;
-                                if (zombie.health <= 0) {
-                                    zombies.splice(j, 1);
-                                    score += 10;
-                                    gameScoreDisplay.textContent = `Score: ${score}`;
-                                    zombiesKilledThisWave++;
-                                } else {
-                                    const pushAngle = Math.atan2(zombie.y - collectable.y, zombie.x - collectable.x);
-                                    zombie.x += Math.cos(pushAngle) * COLLECTABLE_PUSH_FORCE;
-                                    zombie.y += Math.sin(pushAngle) * COLLECTABLE_PUSH_FORCE;
-
-                                    zombie.x = Math.max(zombie.radius, Math.min(canvas.width - zombie.radius, zombie.x));
-                                    zombie.y = Math.max(zombie.radius, Math.min(canvas.height - zombie.radius, zombie.y));
-                                }
-                            }
-                        }
-                    } else {
-                        const angle = Math.atan2(dy, dx);
-                        collectable.x += Math.cos(angle) * COLLECTABLE_SPEED;
-                        collectable.y += Math.sin(angle) * COLLECTABLE_SPEED;
-                    }
-                }
-            }
-        }
-
-        function spawnZombie() {
-            const side = Math.floor(Math.random() * 4);
-            let x, y;
-            const radius = ZOMBIE_RADIUS;
-            const maxHealth = ZOMBIE_MAX_HEALTH + (currentWave * 10);
-            const speed = ZOMBIE_BASE_SPEED + (currentWave * 0.1);
-
-            switch (side) {
-                case 0:
-                    x = Math.random() * canvas.width;
-                    y = -radius;
-                    break;
-                case 1:
-                    x = canvas.width + radius;
-                    y = Math.random() * canvas.height;
-                    break;
-                case 2:
-                    x = Math.random() * canvas.width;
-                    y = canvas.height + radius;
-                    break;
-                case 3:
-                    x = -radius;
-                    y = Math.random() * canvas.height;
-                    break;
-            }
-
-            zombies.push({
-                x: x,
-                y: y,
-                radius: radius,
-                health: maxHealth,
-                maxHealth: maxHealth,
-                speed: speed,
-                lastBiteTime: 0
-            });
-        }
-
-        function updateWaves() {
-            const currentTime = Date.now();
-
-            if (waveIntermission) {
-                if (currentTime - intermissionStartTime > INTERMISSION_DURATION) {
-                    waveIntermission = false;
-                    startNextWave();
-                }
-                return;
-            }
-
-            if (waveInProgress) {
-                if (zombiesSpawnedThisWave < zombiesToSpawnThisWave && (currentTime - lastZombieSpawnTime > ZOMBIE_SPAWN_INTERVAL)) {
-                    spawnZombie();
-                    lastZombieSpawnTime = currentTime;
-                    zombiesSpawnedThisWave++;
-                }
-
-                if (zombies.length === 0 && zombiesSpawnedThisWave >= zombiesToSpawnThisWave) {
-                    waveInProgress = false;
-                    waveIntermission = true;
-                    intermissionStartTime = currentTime;
-                    showMessage(`WAVE ${currentWave} COMPLETE! Get Ready for Wave ${currentWave + 1}!`);
-                }
-            }
-        }
-
-        function updateZombies() {
-            const currentTime = Date.now();
-            for (let i = zombies.length - 1; i >= 0; i--) {
-                const zombie = zombies[i];
-
-                const angle = Math.atan2(player.y - zombie.y, player.x - zombie.x);
-                zombie.x += Math.cos(angle) * zombie.speed;
-                zombie.y += Math.sin(angle) * zombie.speed;
-
-                const distPlayerZombie = Math.sqrt(Math.pow(player.x - zombie.x, 2) + Math.pow(player.y - zombie.y, 2));
-                if (distPlayerZombie < player.radius + ZOMBIE_BITE_RADIUS) {
-                    if (currentTime - zombie.lastBiteTime > ZOMBIE_BITE_INTERVAL) {
-                        playerHealth -= ZOMBIE_BITE_DAMAGE;
-                        gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(playerHealth))}`;
-                        zombie.lastBiteTime = currentTime;
-
-                        if (playerHealth <= 0) {
-                            gameOver();
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-
-        function updateControlModeButtons() {
-            pcModeButton.classList.remove('selected-control');
-            // No need to remove 'selected-control' from mobileModeButton as it's hidden and won't be in the DOM
-            if (controlMode === 'pc') {
-                pcModeButton.classList.add('selected-control');
-            }
-        }
+        // --- Other update functions (now mostly handled server-side) ---
+        // These are mostly empty or client-side visual only now, as server is authoritative
+        function shootBullet() { /* Server broadcasts new bullet data */ }
+        function throwGrenade() { /* To be implemented server-side */ }
+        function updateBullets() { /* Server sends bullet updates */ }
+        function spawnPowerUpBox() { /* Server might handle this */ }
+        function updatePowerUpBoxes() { /* Server might handle this */ }
+        function updatePowerUpCollectables() { /* Server might handle this */ }
+        function spawnZombie() { /* Server handles this */ }
+        function updateWaves() { /* Server handles this */ }
+        function updateZombies() { /* Server handles this */ }
 
 
         // --- Main Game Loop ---
@@ -1655,22 +1488,28 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Update local player input and send to server
             updatePlayer(deltaTime);
-            updateBullets();
-            updateGrenades();
-            updatePowerUpBoxes();
-            updatePowerUpCollectables();
-            updateZombies();
-            updateWaves();
 
-            zombiesLeftDisplay.textContent = `Zombies Left: ${zombiesToSpawnThisWave - zombiesKilledThisWave}`;
-
-            drawPlayer();
-            bullets.forEach(drawBullet);
+            // Drawing all entities based on the latest state from the server
+            for (const pId in players) {
+                drawPlayer(players[pId]);
+            }
+            for (const bId in bullets) {
+                drawBullet(bullets[bId]);
+            }
+            for (const zId in zombies) {
+                drawZombie(zombies[zId]);
+            }
+            
+            // These remain client-side for now, unless moved to server
             grenades.forEach(drawGrenade);
             powerUpBoxes.forEach(drawPowerUpBox);
             powerUpCollectables.forEach(drawPowerUpCollectable);
-            zombies.forEach(drawZombie);
+
+            // Update text displays based on locally updated values or server values
+            // (Health, Score, Zombies Left updated from server via 'gameUpdate' or specific events)
+            zombiesLeftDisplay.textContent = `Zombies Left: ${Object.keys(zombies).length}`; // Based on current visible zombies
 
             requestAnimationFrame(gameLoop);
         }
