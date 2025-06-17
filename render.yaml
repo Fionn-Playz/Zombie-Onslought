@@ -12,9 +12,10 @@ services:
     startCommand: node server.js
     # Health check path (optional but recommended for production)
     healthCheckPath: /health
-    # Environment variables are defined here, including the PORT
+    # Environment variables are defined here, including the PORT that your server.js reads
     envVars:
       - key: PORT
-        value: "3000" # Define PORT as an environment variable
+        value: "3000" # Define PORT as an environment variable with string value
+      # Example of other environment variables if you needed them:
       # - key: MY_API_KEY
       #   value: mysecretkey
