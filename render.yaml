@@ -1,0 +1,22 @@
+# render.yaml for Node.js Game Server
+# This file tells Render how to deploy your server
+
+services:
+  - type: web # This specifies that it's a web service (your server)
+    name: zombie-game-server # A friendly name for your service on Render
+    env: node # The environment for your service (Node.js)
+    plan: free # Use the free tier for testing (can be changed later)
+    # The command to install dependencies
+    buildCommand: npm install
+    # The command to start your server
+    startCommand: node server.js
+    # Port your application listens on (matches process.env.PORT || 3000 in server.js)
+    port: 3000
+    # Health check path (optional but recommended for production)
+    # You might need to add a simple GET endpoint in your server.js like app.get('/health', (req, res) => res.send('OK'));
+    healthCheckPath: /health
+    # Environment variables (if you had any, none needed for this basic server)
+    # envVars:
+    #   - key: MY_API_KEY
+    #     value: mysecretkey
+
