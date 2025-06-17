@@ -315,7 +315,7 @@
                     <p>Damage: 50</p>
                     <p>Fire Rate: 800ms</p>
                     <p>Bullet Speed: 5</p>
-                    <p>Ammo: 100</p>
+                    <p>Ammo: 1000</p> <!-- MODIFIED: Ammo is now 1000 (100 * 10) -->
                 </div>
                 <div class="gun-card" data-gun="assaultRifle">
                     <i class="fas fa-rifle gun-icon"></i>
@@ -329,7 +329,7 @@
             </div>
             <div id="controlModeSelection">
                 <button id="pcModeButton" class="selected-control">PC Mode</button>
-                <button id="mobileModeButton">Mobile Mode</button>
+                <!-- REMOVED: <button id="mobileModeButton">Mobile Mode</button> -->
             </div>
             <button id="startGameButton" disabled>START GAME</button>
         </div>
@@ -378,8 +378,9 @@
         const POWERUP_BOX_HEIGHT = 40;
         const POWERUP_BOX_HEALTH = 200;
         const POWERUP_BOX_DROP_SPEED = 0.5;
-        const MIN_POWERUP_SPAWN_INTERVAL = 15000;
-        const MAX_POWERUP_SPAWN_INTERVAL = 30000;
+        // MODIFIED: Power-up spawn intervals (shorter for more frequent drops)
+        const MIN_POWERUP_SPAWN_INTERVAL = 5000; // 5 seconds
+        const MAX_POWERUP_SPAWN_INTERVAL = 10000; // 10 seconds
 
         const COLLECTABLE_SPEED = 15;
         const COLLECTABLE_EXPLOSION_RADIUS = 30;
@@ -394,7 +395,8 @@
         const ZOMBIE_BASE_SPEED = 0.5;
         const ZOMBIE_SPAWN_INTERVAL = 1000;
         const ZOMBIE_BITE_RADIUS = 25;
-        const ZOMBIE_BITE_DAMAGE = 10;
+        // MODIFIED: ZOMBIE_BITE_DAMAGE is now 5 (was 10 / 2)
+        const ZOMBIE_BITE_DAMAGE = 5; 
         const ZOMBIE_BITE_INTERVAL = 1000;
         const ZOMBIE_LEG_AMPLITUDE = 0.8;
         const ZOMBIE_LEG_SPEED = 0.05;
@@ -425,7 +427,7 @@
         let lastZombieSpawnTime = 0;
         let nextPowerUpSpawnTime = 0;
 
-        let controlMode = 'pc';
+        let controlMode = 'pc'; // Default control mode is PC, as mobile button is now hidden
         let currentInputType = 'mouse';
 
         // Virtual Joystick and Fire Button for Mobile Controls
@@ -474,7 +476,7 @@
         const messageBox = document.getElementById('messageBox');
 
         const pcModeButton = document.getElementById('pcModeButton');
-        const mobileModeButton = document.getElementById('mobileModeButton');
+        // mobileModeButton is no longer directly referenced as it's removed from HTML
         const mobileControlsDiv = document.getElementById('mobileControls');
         const joystickBaseElement = document.getElementById('joystickBase');
         const joystickStickElement = document.getElementById('joystickStick');
@@ -501,7 +503,8 @@
                 bulletSpeed: 5,
                 bulletColor: '#e67e22',
                 bulletLength: 12,
-                maxAmmo: 100,
+                // MODIFIED: maxAmmo is now 1000 (100 * 10)
+                maxAmmo: 1000, 
                 ammoPerShot: 5,
                 icon: 'fas fa-pump-medical'
             },
@@ -574,6 +577,7 @@
             }
         });
 
+        // Touch events are still attached, but controlMode will prevent them from firing in 'pc' mode
         canvas.addEventListener('touchstart', (e) => {
             if (controlMode === 'mobile' && gameState === 'playing') {
                 e.preventDefault();
@@ -595,9 +599,9 @@
         });
 
         pcModeButton.addEventListener('click', () => {
-            controlMode = 'pc';
+            controlMode = 'pc'; // Ensure PC mode is selected
             currentInputType = 'mouse';
-            updateControlModeButtons();
+            updateControlModeButtons(); // Update visual selection (only PC button will show selected)
             player.mobileVx = 0;
             player.mobileVy = 0;
             joystick.active = false;
@@ -606,20 +610,21 @@
             joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
             fireButtonState.active = false;
             fireButtonState.touchId = null;
-            // Ensure mobile controls are hidden if switching to PC mode from menu
-            mobileControlsDiv.style.display = 'none';
+            mobileControlsDiv.style.display = 'none'; // Ensure mobile controls are hidden if switching to PC mode from menu
         });
 
-        mobileModeButton.addEventListener('click', () => {
-            controlMode = 'mobile';
-            currentInputType = 'touch';
-            updateControlModeButtons();
-            mouse.pressed = false;
-            keys = {};
-            mouse.x = player.x;
-            mouse.y = player.y;
-            // No need to show mobileControlsDiv here, it will be handled by startGame
-        });
+        // The mobileModeButton click handler is now effectively removed as the button is hidden.
+        // If it were to be re-introduced, its logic would go here:
+        // mobileModeButton.addEventListener('click', () => {
+        //     controlMode = 'mobile';
+        //     currentInputType = 'touch';
+        //     updateControlModeButtons();
+        //     mouse.pressed = false;
+        //     keys = {};
+        //     mouse.x = player.x;
+        //     mouse.y = player.y;
+        // });
+
 
         startGameButton.addEventListener('click', () => {
             if (player.currentGun) {
@@ -684,7 +689,6 @@
                 if (distToFireButtonCenter < fireButtonState.radius && !fireButtonState.active) {
                     fireButtonState.active = true;
                     fireButtonState.touchId = touch.identifier;
-                    // No shootBullet() call here directly, it's handled in updatePlayer for continuous fire.
                 }
             }
         }
@@ -760,6 +764,8 @@
             player.currentGun = null;
             startGameButton.disabled = true;
 
+            // Ensure PC mode is selected by default and its button is highlighted
+            controlMode = 'pc';
             updateControlModeButtons();
         }
 
@@ -776,10 +782,12 @@
             ammoDisplay.style.display = 'block';
             zombiesLeftDisplay.style.display = 'block';
 
+            // Mobile controls overlay should only be visible if controlMode is explicitly 'mobile'.
+            // Since the button is hidden, this div will effectively remain hidden.
             if (controlMode === 'mobile') {
                 mobileControlsDiv.style.display = 'block';
             } else {
-                mobileControlsDiv.style.display = 'none'; // Explicitly hide if PC mode
+                mobileControlsDiv.style.display = 'none';
             }
 
             resetGame();
@@ -821,7 +829,7 @@
             waveDisplay.textContent = `Wave: ${currentWave}`;
             zombiesLeftDisplay.textContent = `Zombies Left: 0`;
             currentWeaponDisplay.textContent = `Weapon: ${player.currentGun ? player.currentGun.name : 'None'}`;
-            ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+            ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun ? player.currentGun.maxAmmo : '--'}`;
             
             if (typeof player !== 'undefined' && player !== null) {
                 mouse.x = player.x;
@@ -869,11 +877,9 @@
 
         function updateControlModeButtons() {
             pcModeButton.classList.remove('selected-control');
-            mobileModeButton.classList.remove('selected-control');
+            // No need to remove 'selected-control' from mobileModeButton as it's hidden and won't be in the DOM
             if (controlMode === 'pc') {
                 pcModeButton.classList.add('selected-control');
-            } else {
-                mobileModeButton.classList.add('selected-control');
             }
         }
 
@@ -886,13 +892,10 @@
 
             let aimAngle;
             if (controlMode === 'mobile' && (joystick.active || fireButtonState.active)) {
-                // Aim towards the touch point when in mobile mode and controls are active
                 aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
             } else if (controlMode === 'pc') {
-                // Aim towards mouse cursor in PC mode
                 aimAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
             } else {
-                 // Default aim (e.g., if game not started or no aiming input)
                  aimAngle = 0;
             }
 
@@ -1156,7 +1159,7 @@
                 case 'ammoRefill':
                     boxColor = '#6f42c1';
                     accentColor = '#4a2f86';
-                    iconText = '�';
+                    iconText = '🔥';
                     iconColor = '#ecf0f1';
                     break;
                 default:
@@ -1293,7 +1296,6 @@
                 player.x += (player.mobileVx || 0);
                 player.y += (player.mobileVy || 0);
 
-                // NEW: Handle continuous firing for mobile if fire button is active
                 if (fireButtonState.active && player.currentGun) {
                     const currentTime = Date.now();
                     if (currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
@@ -1443,22 +1445,9 @@
 
         function spawnPowerUpBox() {
             const x = Math.random() * (canvas.width - POWERUP_BOX_WIDTH) + POWERUP_BOX_WIDTH / 2;
-            let powerUpTypesWeighted = ['sonicBlaster', 'grenadeResupply', 'ammoRefill'];
-
-            if (playerHealth < 30) {
-                powerUpTypesWeighted.push('healthPack', 'healthPack', 'healthPack', 'healthPack', 'healthPack');
-            } else if (playerHealth < 50) {
-                powerUpTypesWeighted.push('healthPack', 'healthPack', 'healthPack');
-            } else if (playerHealth < 75) {
-                powerUpTypesWeighted.push('healthPack');
-            }
-
-            if (player.currentGun && playerAmmo < player.currentGun.maxAmmo / 4) {
-                powerUpTypesWeighted.push('ammoRefill', 'ammoRefill');
-            } else if (player.currentGun && playerAmmo < player.currentGun.maxAmmo / 2) {
-                powerUpTypesWeighted.push('ammoRefill');
-            }
-
+            // Removed redundant health/ammo checks to make all powerups appear more often
+            let powerUpTypesWeighted = ['sonicBlaster', 'grenadeResupply', 'ammoRefill', 'healthPack']; 
+            
             const randomType = powerUpTypesWeighted[Math.floor(Math.random() * powerUpTypesWeighted.length)];
 
             powerUpBoxes.push({
@@ -1649,11 +1638,9 @@
 
         function updateControlModeButtons() {
             pcModeButton.classList.remove('selected-control');
-            mobileModeButton.classList.remove('selected-control');
+            // No need to remove 'selected-control' from mobileModeButton as it's hidden and won't be in the DOM
             if (controlMode === 'pc') {
                 pcModeButton.classList.add('selected-control');
-            } else {
-                mobileModeButton.classList.add('selected-control');
             }
         }
 
@@ -1689,24 +1676,18 @@
         }
 
         window.onload = function() {
-            // Calculate absolute canvas coordinates for the CENTERS of joystick base and fire button
-            // These values are based on the intended visual placement (e.g., 20px from bottom/left)
-            joystick.baseX = 20 + joystick.baseRadius; // 20px from left edge + half its width
-            joystick.baseY = canvas.height - 20 - joystick.baseRadius; // 20px from bottom edge + half its height
+            joystick.baseX = 20 + joystick.baseRadius;
+            joystick.baseY = canvas.height - 20 - joystick.baseRadius;
 
-            fireButtonState.x = canvas.width - 30 - fireButtonState.radius; // 30px from right edge + half its width
-            fireButtonState.y = canvas.height - 30 - fireButtonState.radius; // 30px from bottom edge + half its height
+            fireButtonState.x = canvas.width - 30 - fireButtonState.radius;
+            fireButtonState.y = canvas.height - 30 - fireButtonState.radius;
 
-            // Apply these calculated positions to the actual DOM elements
-            // Note: CSS 'left' and 'top' position an element's top-left corner.
-            // So, subtract the radius to get the top-left from the center.
             joystickBaseElement.style.left = `${joystick.baseX - joystick.baseRadius}px`;
             joystickBaseElement.style.top = `${joystick.baseY - joystick.baseRadius}px`;
 
             fireButtonElement.style.left = `${fireButtonState.x - fireButtonState.radius}px`;
             fireButtonElement.style.top = `${fireButtonState.y - fireButtonState.radius}px`;
 
-            // Initialize stick position relative to its parent's (joystickBase) top-left
             joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
             joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
 
@@ -1716,4 +1697,3 @@
     </script>
 </body>
 </html>
-�
