@@ -299,6 +299,7 @@
             opacity: 0;
             pointer-events: none; /* Ensure it doesn't block other inputs */
             transform: scale(0);
+            display: none; /* Hidden by default */
         }
     </style>
 </head>
@@ -325,7 +326,7 @@
                     <p>Damage: 50</p>
                     <p>Fire Rate: 800ms</p>
                     <p>Bullet Speed: 5</p>
-                    <p>Ammo: 1000</p> <!-- MODIFIED: Ammo is now 1000 (100 * 10) -->
+                    <p>Ammo: 1000</p>
                 </div>
                 <div class="gun-card" data-gun="assaultRifle">
                     <i class="fas fa-rifle gun-icon"></i>
@@ -335,7 +336,15 @@
                     <p>Bullet Speed: 9</p>
                     <p>Ammo: 300</p>
                 </div>
-                <!-- Sonic Blaster removed from initial selection -->
+                <!-- New Knife weapon card -->
+                <div class="gun-card" data-gun="knife">
+                    <i class="fas fa-knife gun-icon"></i>
+                    <h3>Knife</h3>
+                    <p>Damage: 70</p>
+                    <p>Cooldown: 1.5s</p>
+                    <p>Range: Melee</p>
+                    <p>Ammo: Infinite</p>
+                </div>
             </div>
             <div id="controlModeSelection">
                 <button id="pcModeButton" class="selected-control">PC Mode</button>
@@ -418,6 +427,7 @@
         const KNIFE_RADIUS = 70; // Visual radius of knife attack
         const KNIFE_COOLDOWN = 1500; // 1.5 seconds cooldown (client-side enforcement)
         const KNIFE_EFFECT_DURATION = 150; // How long the visual effect lasts in ms
+        const KNIFE_DAMAGE = 70; // Damage applied by knife
 
         // --- Game State Variables ---
         let gameState = 'start';
@@ -518,7 +528,8 @@
                 bulletLength: 10,
                 maxAmmo: 100,
                 ammoPerShot: 1,
-                icon: 'fas fa-hand-pistol'
+                icon: 'fas fa-hand-pistol',
+                isMelee: false
             },
             shotgun: {
                 name: 'Shotgun',
@@ -529,7 +540,8 @@
                 bulletLength: 12,
                 maxAmmo: 1000, 
                 ammoPerShot: 5,
-                icon: 'fas fa-pump-medical'
+                icon: 'fas fa-pump-medical',
+                isMelee: false
             },
             assaultRifle: {
                 name: 'Assault Rifle',
@@ -540,7 +552,8 @@
                 bulletLength: 8,
                 maxAmmo: 300,
                 ammoPerShot: 1,
-                icon: 'fas fa-rifle'
+                icon: 'fas fa-rifle',
+                isMelee: false
             },
             sonicBlaster: {
                 name: 'Sonic Blaster',
@@ -551,7 +564,31 @@
                 bulletLength: 20,
                 maxAmmo: 999999999999,
                 ammoPerShot: 1,
-                icon: 'fas fa-bolt'
+                icon: 'fas fa-bolt',
+                isMelee: false
+            },
+            knife: {
+                name: 'Knife',
+                damage: KNIFE_DAMAGE,
+                cooldown: KNIFE_COOLDOWN, // Cooldown handled client-side for immediate feedback
+                icon: 'fas fa-knife',
+                isMelee: true, // Indicate it's a melee weapon
+                maxAmmo: Infinity, // Infinite ammo for melee
+                ammoPerShot: 0 // No ammo consumed
+            },
+            // New Omni-Blaster powerup gun
+            omniBlaster: {
+                name: 'Omni-Blaster',
+                damage: 25, // Moderate damage per bullet
+                fireRate: 200, // Fire a burst every 200ms
+                bulletSpeed: 25, // Same speed as Sonic Blaster
+                bulletColor: '#34d9eb', // Cyan-like color
+                bulletLength: 15,
+                maxAmmo: Infinity, // Infinite ammo, as it's a powerup
+                ammoPerShot: 0, // No ammo consumed per shot
+                icon: 'fas fa-circle', // Placeholder icon
+                isMelee: false,
+                bulletsPerShot: 16 // Number of bullets fired in a circle
             }
         };
 
@@ -565,7 +602,8 @@
         }
 
         // --- Socket.IO Client Setup ---
-        const socket = io('http://localhost:3000'); // REMEMBER TO CHANGE THIS TO YOUR DEPLOYED SERVER URL!
+        // IMPORTANT: Replace 'http://localhost:3000' with your actual deployed server URL!
+        const socket = io('http://localhost:3000'); 
 
         socket.on('connect', () => {
             console.log('Connected to server with ID:', socket.id);
@@ -610,13 +648,22 @@
                 player = players[myPlayerId];
                 gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(player.health))}`;
                 gameScoreDisplay.textContent = `Score: ${player.score}`;
-                // Grenades and ammo are client-side only for now, so don't overwrite from server
+                // Grenades are client-side only for now, so don't overwrite from server
                 grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
-                ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun ? player.currentGun.maxAmmo : '--'}`;
+                
+                // Update ammo display based on selected gun type
+                if (player.currentGun && player.currentGun.isMelee) {
+                    ammoDisplay.textContent = `Ammo: ∞`; // Infinite ammo for melee
+                } else if (player.currentGun) {
+                    ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                } else {
+                    ammoDisplay.textContent = `Ammo: -- / --`;
+                }
+
             } else {
-                 if (gameState === 'playing') {
-                     gameOver(); // If your player object no longer exists on server, game over
-                 }
+                if (gameState === 'playing') {
+                    gameOver(); // If your player object no longer exists on server, game over
+                }
             }
         });
 
@@ -656,6 +703,40 @@
             if (players[data.playerId]) {
                 players[data.playerId].knifeEffectActive = true;
                 players[data.playerId].knifeEffectStartTime = Date.now();
+                // If it's this player, display the visual effect
+                if (data.playerId === myPlayerId) {
+                    knifeEffectElement.style.display = 'block';
+                    // Position the effect around the player
+                    const effectSize = KNIFE_RADIUS * 2; // Diameter
+                    knifeEffectElement.style.width = `${effectSize}px`;
+                    knifeEffectElement.style.height = `${effectSize}px`;
+                    knifeEffectElement.style.left = `${player.x - KNIFE_RADIUS}px`;
+                    knifeEffectElement.style.top = `${player.y - KNIFE_RADIUS}px`;
+                    knifeEffectElement.style.opacity = '1';
+                    knifeEffectElement.style.transform = 'scale(1)';
+
+                    // Hide the effect after a short duration
+                    setTimeout(() => {
+                        knifeEffectElement.style.opacity = '0';
+                        knifeEffectElement.style.transform = 'scale(0)';
+                        knifeEffectElement.style.display = 'none';
+                        if (players[data.playerId]) {
+                            players[data.playerId].knifeEffectActive = false;
+                        }
+                    }, KNIFE_EFFECT_DURATION);
+                }
+            }
+        });
+
+        // Listen for powerup pickup event from the server
+        socket.on('powerupPickedUp', (data) => {
+            if (data.playerId === myPlayerId) {
+                // Update the current gun on the client side
+                player.currentGun = guns[data.gunType];
+                playerAmmo = player.currentGun.maxAmmo; // Should be Infinity for Omni-Blaster
+                currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
+                ammoDisplay.textContent = player.currentGun.isMelee ? `Ammo: ∞` : `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                showMessage(`Powerup: ${player.currentGun.name}!`, 2500);
             }
         });
 
@@ -669,6 +750,18 @@
                 }
                 if (e.code === 'KeyM') { // New: Knife attack
                     performKnifeAttack();
+                }
+                if (e.code === 'KeyP') { // Temporary: Equip Omni-Blaster powerup
+                    if (myPlayerId && players[myPlayerId]) {
+                        players[myPlayerId].currentGun = guns['omniBlaster'];
+                        player.currentGun = guns['omniBlaster'];
+                        playerAmmo = guns['omniBlaster'].maxAmmo;
+                        currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
+                        ammoDisplay.textContent = `Ammo: ∞`;
+                        showMessage("Omni-Blaster Acquired!", 1500);
+                        // In a real game, you would emit a server event here
+                        // socket.emit('powerupAcquired', { gunType: 'omniBlaster' });
+                    }
                 }
             }
         });
@@ -750,16 +843,34 @@
             card.addEventListener('click', () => {
                 gunCards.forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
+                const selectedGunType = card.dataset.gun;
                 // Update the local player's gun choice for UI/ammo display
                 if (myPlayerId && players[myPlayerId]) {
-                    players[myPlayerId].currentGun = card.dataset.gun;
-                    player.currentGun = guns[card.dataset.gun]; // Update the client's player object
-                    playerAmmo = player.currentGun.maxAmmo;
+                    // Do not allow selection of Omni-Blaster from the menu
+                    if (selectedGunType === 'omniBlaster') {
+                        showMessage("Omni-Blaster is a powerup, not a starting weapon!", 2000);
+                        card.classList.remove('selected'); // Deselect if Omni-Blaster was accidentally clicked
+                        startGameButton.disabled = true; // Keep button disabled if nothing else selected
+                        player.currentGun = null; // Clear selected gun
+                        currentWeaponDisplay.textContent = `Weapon: --`;
+                        ammoDisplay.textContent = `Ammo: -- / --`;
+                        return;
+                    }
+                    players[myPlayerId].currentGun = guns[selectedGunType]; // Assign the full gun object
+                    player.currentGun = guns[selectedGunType]; // Update the client's player object
+
+                    if (player.currentGun.isMelee) {
+                        playerAmmo = Infinity; // Infinite ammo for knife
+                        ammoDisplay.textContent = `Ammo: ∞`;
+                    } else {
+                        playerAmmo = player.currentGun.maxAmmo;
+                        ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                    }
+                    
                     currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
-                    ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
                     startGameButton.disabled = false;
                     // Also inform the server about the gun change
-                    socket.emit('playerChangeGun', { gunType: card.dataset.gun });
+                    socket.emit('playerChangeGun', { gunType: selectedGunType });
                 }
             });
         });
@@ -871,14 +982,8 @@
             ammoDisplay.style.display = 'none';
             zombiesLeftDisplay.style.display = 'none';
             mobileControlsDiv.style.display = 'none'; 
-            knifeEffectElement.style.display = 'none'; // Hide knife effect on menu
-
-            gunCards.forEach(c => c.classList.remove('selected'));
-            player.currentGun = null; // Reset local gun
-            startGameButton.disabled = true;
-
-            controlMode = 'pc';
-            updateControlModeButtons();
+            knifeEffectElement.style.display = 'none'; // Hide knife effect at start
+            player.knifeEffectActive = false; // Reset effect state
         }
 
         function startGame() {
@@ -894,642 +999,384 @@
             ammoDisplay.style.display = 'block';
             zombiesLeftDisplay.style.display = 'block';
 
+            // Reset client-side game state for a new game (server will also reset)
+            score = 0;
+            playerHealth = 100;
+            grenadeCount = 3;
+            // Ammo is set when gun is selected, but ensure it's correct at start
+            if (player.currentGun && player.currentGun.isMelee) {
+                playerAmmo = Infinity;
+            } else if (player.currentGun) {
+                playerAmmo = player.currentGun.maxAmmo;
+            } else {
+                 playerAmmo = 0; // Should not happen if start button is disabled
+            }
+
+            // Emit an event to the server to start the game
+            socket.emit('startGame', { selectedGun: player.currentGun.name });
+
+            // Initialize mobile controls if chosen, otherwise hide
             if (controlMode === 'mobile') {
                 mobileControlsDiv.style.display = 'block';
+                // Position joystick and fire button (adjust based on canvas size or desired layout)
+                joystick.baseX = 100;
+                joystick.baseY = canvas.height - 100;
+                joystickBaseElement.style.left = `${joystick.baseX - joystick.baseRadius}px`;
+                joystickBaseElement.style.top = `${joystick.baseY - joystick.baseRadius}px`;
+                joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
+                joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
+
+
+                fireButtonState.x = canvas.width - 100;
+                fireButtonState.y = canvas.height - 100;
+                fireButtonElement.style.left = `${fireButtonState.x - fireButtonState.radius}px`;
+                fireButtonElement.style.top = `${fireButtonState.y - fireButtonState.radius}px`;
             } else {
                 mobileControlsDiv.style.display = 'none';
             }
-            // Knife effect starts hidden, only shows on attack
-            knifeEffectElement.style.display = 'block';
-
-            resetGame();
-            // Waves are now controlled by the server, so no client-side startNextWave() here
-            // startNextWave(); // Removed
             gameLoop();
-        }
-
-        function resetGame() {
-            score = 0; 
-            playerHealth = 100;
-            grenadeCount = 3; 
-            playerAmmo = player.currentGun ? player.currentGun.maxAmmo : 0; // Reset ammo based on selected gun
-
-            zombies = {}; // Clear local zombie objects
-            bullets = {}; // Clear local bullet objects
-            grenades = []; 
-            powerUpBoxes = [];
-            powerUpCollectables = [];
-
-            currentWave = 0; 
-            zombiesToSpawnThisWave = 0;
-            zombiesSpawnedThisWave = 0;
-            zombiesKilledThisWave = 0;
-            waveInProgress = false;
-            waveIntermission = false;
-            intermissionStartTime = 0;
-            lastZombieSpawnTime = 0;
-            nextPowerUpSpawnTime = Date.now() + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL) + MIN_POWERUP_SPAWN_INTERVAL;
-
-            gameScoreDisplay.textContent = `Score: ${score}`;
-            gameHealthDisplay.textContent = `Health: ${playerHealth}`;
-            grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
-            waveDisplay.textContent = `Wave: ${currentWave}`;
-            zombiesLeftDisplay.textContent = `Zombies Left: 0`;
-            currentWeaponDisplay.textContent = `Weapon: ${player.currentGun ? player.currentGun.name : 'None'}`;
-            ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun ? player.currentGun.maxAmmo : '--'}`;
-            
-            // Client-side player object reset (will be overwritten by server state soon)
-            if (myPlayerId && players[myPlayerId]) {
-                player = players[myPlayerId]; // Re-point to the current player object
-                player.x = canvas.width / 2;
-                player.y = canvas.height / 2;
-                player.lastKnifeTime = 0;
-                player.knifeEffectActive = false;
-                player.knifeEffectStartTime = 0;
-            } else {
-                // Fallback if player object isn't ready yet (should be after 'connect')
-                player.x = canvas.width / 2;
-                player.y = canvas.height / 2;
-            }
-            
-            mouse.x = player.x;
-            mouse.y = player.y;
-            mouse.lastShotTime = 0;
-
-            player.mobileVx = 0;
-            player.mobileVy = 0;
-            joystick.active = false;
-            joystick.touchId = null;
-            joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
-            joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
-            fireButtonState.active = false;
-            fireButtonState.touchId = null;
         }
 
         function gameOver() {
             gameState = 'gameOver';
-            finalScoreSpan.textContent = Math.max(0, currentWave - 1); // Waves are server-side now
             gameOverMenu.classList.add('active');
-            gameScoreDisplay.style.display = 'none';
-            gameHealthDisplay.style.display = 'none';
-            grenadeCountDisplay.style.display = 'none';
-            currentWeaponDisplay.style.display = 'none';
-            waveDisplay.style.display = 'none';
-            ammoDisplay.style.display = 'none';
-            zombiesLeftDisplay.style.display = 'none';
-            mobileControlsDiv.style.display = 'none';
+            finalScoreSpan.textContent = currentWave; // Assuming currentWave reflects waves survived
+            mobileControlsDiv.style.display = 'none'; // Hide mobile controls
             knifeEffectElement.style.display = 'none'; // Hide knife effect on game over
-        }
-
-        function startNextWave() {
-            // This function is now mostly server-controlled in multiplayer
-            currentWave++;
-            waveDisplay.textContent = `Wave: ${currentWave}`;
-            showMessage(`WAVE ${currentWave} INCOMING!`);
+            player.knifeEffectActive = false; // Reset effect state
+            socket.emit('gameOver');
         }
 
         function updateControlModeButtons() {
-            pcModeButton.classList.remove('selected-control');
+            pcModeButton.classList.toggle('selected-control', controlMode === 'pc');
+            // mobileModeButton.classList.toggle('selected-control', controlMode === 'mobile');
+        }
+
+        function updatePlayerMovement() {
+            if (!myPlayerId || !players[myPlayerId]) return;
+
+            const myPlayer = players[myPlayerId];
+            let vx = 0;
+            let vy = 0;
+
             if (controlMode === 'pc') {
-                pcModeButton.classList.add('selected-control');
+                if (keys['KeyW']) vy -= myPlayer.speed;
+                if (keys['KeyS']) vy += myPlayer.speed;
+                if (keys['KeyA']) vx -= myPlayer.speed;
+                if (keys['KeyD']) vx += myPlayer.speed;
+            } else if (controlMode === 'mobile') {
+                vx = myPlayer.mobileVx;
+                vy = myPlayer.mobileVy;
+            }
+
+            // Normalize diagonal movement
+            if (vx !== 0 && vy !== 0) {
+                const magnitude = Math.sqrt(vx * vx + vy * vy);
+                vx = (vx / magnitude) * myPlayer.speed;
+                vy = (vy / magnitude) * myPlayer.speed;
+            }
+
+            // Emit player movement to the server
+            socket.emit('playerMovement', { vx, vy });
+        }
+
+        function updatePlayerShooting() {
+            if (!myPlayerId || !players[myPlayerId]) return;
+
+            const myPlayer = players[myPlayerId];
+            const now = Date.now();
+            const gun = myPlayer.currentGun ? guns[myPlayer.currentGun.name.toLowerCase()] : null;
+
+            if (!gun) return; // No gun selected, cannot shoot
+
+            // Check if it's a ranged weapon and if fire button/mouse is pressed
+            if (!gun.isMelee && (mouse.pressed || fireButtonState.active)) {
+                if (now - mouse.lastShotTime > gun.fireRate) {
+                    if (gun.name === 'Omni-Blaster') {
+                        // Omni-Blaster: shoots in a circle
+                        const numBullets = gun.bulletsPerShot;
+                        for (let i = 0; i < numBullets; i++) {
+                            const angle = (Math.PI * 2 / numBullets) * i;
+                            socket.emit('playerShoot', {
+                                x: myPlayer.x,
+                                y: myPlayer.y,
+                                angle: angle,
+                                gunType: gun.name.toLowerCase()
+                            });
+                        }
+                    } else if (playerAmmo > 0) {
+                        // Regular ranged weapon: shoots towards mouse
+                        const angle = Math.atan2(mouse.y - myPlayer.y, mouse.x - myPlayer.x);
+                        socket.emit('playerShoot', {
+                            x: myPlayer.x,
+                            y: myPlayer.y,
+                            angle: angle,
+                            gunType: gun.name.toLowerCase()
+                        });
+                        playerAmmo = Math.max(0, playerAmmo - gun.ammoPerShot); // Decrement client-side ammo
+                        ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${gun.maxAmmo}`;
+                    } else {
+                        showMessage("Out of Ammo!", 1000);
+                        mouse.pressed = false; // Stop shooting if out of ammo
+                        fireButtonState.active = false;
+                    }
+                    mouse.lastShotTime = now;
+                }
+            }
+        }
+
+        function throwGrenade() {
+            if (!myPlayerId || !players[myPlayerId]) return;
+            const myPlayer = players[myPlayerId];
+
+            if (grenadeCount > 0) {
+                // Calculate grenade direction based on mouse position
+                const angle = Math.atan2(mouse.y - myPlayer.y, mouse.x - myPlayer.x);
+                socket.emit('playerThrowGrenade', {
+                    x: myPlayer.x,
+                    y: myPlayer.y,
+                    angle: angle
+                });
+                grenadeCount--;
+                grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
+            } else {
+                showMessage("No Grenades left!", 1000);
             }
         }
 
         function performKnifeAttack() {
-            const currentTime = Date.now();
-            if (player && (currentTime - player.lastKnifeTime > KNIFE_COOLDOWN)) {
-                player.lastKnifeTime = currentTime;
-                socket.emit('knifeAttack'); // Send event to server
+            if (!myPlayerId || !players[myPlayerId]) return;
+            const myPlayer = players[myPlayerId];
+            const now = Date.now();
 
-                // Trigger local visual effect immediately for responsiveness
-                player.knifeEffectActive = true;
-                player.knifeEffectStartTime = currentTime;
+            // Ensure the selected weapon is knife
+            if (!myPlayer.currentGun || myPlayer.currentGun.name !== 'Knife') {
+                showMessage("You need to select the Knife!", 1000);
+                return;
+            }
+
+            // Check client-side cooldown
+            if (now - myPlayer.lastKnifeTime > KNIFE_COOLDOWN) {
+                myPlayer.lastKnifeTime = now;
+                // Emit knife attack event to the server
+                socket.emit('playerKnifeAttack', { playerId: myPlayerId });
+
+                // Trigger local visual effect immediately
+                myPlayer.knifeEffectActive = true;
+                myPlayer.knifeEffectStartTime = now;
+                knifeEffectElement.style.display = 'block';
+                const effectSize = KNIFE_RADIUS * 2; // Diameter
+                knifeEffectElement.style.width = `${effectSize}px`;
+                knifeEffectElement.style.height = `${effectSize}px`;
+                knifeEffectElement.style.left = `${myPlayer.x - KNIFE_RADIUS}px`;
+                knifeEffectElement.style.top = `${myPlayer.y - KNIFE_RADIUS}px`;
+                knifeEffectElement.style.opacity = '1';
+                knifeEffectElement.style.transform = 'scale(1)';
+
+                // Hide the effect after a short duration
+                setTimeout(() => {
+                    knifeEffectElement.style.opacity = '0';
+                    knifeEffectElement.style.transform = 'scale(0)';
+                    knifeEffectElement.style.display = 'none';
+                    if (players[myPlayerId]) { // Check if player still exists
+                        players[myPlayerId].knifeEffectActive = false;
+                    }
+                }, KNIFE_EFFECT_DURATION);
             } else {
-                showMessage("Knife on cooldown!", 500);
+                showMessage("Knife on cooldown!", 1000);
             }
         }
 
 
-        // --- Game Objects Drawing ---
+        // --- Drawing Functions ---
 
-        function drawPlayer(p) { // Renamed parameter from 'player' to 'p' to avoid confusion with global 'player'
-            ctx.save();
-            ctx.translate(p.x, p.y);
-
-            let aimAngle;
-            // The logic for aiming should still be local as mouse/touch are local inputs
-            if (p.id === myPlayerId) { // Only aim this client's player based on local mouse/touch
-                if (controlMode === 'mobile' && (joystick.active || fireButtonState.active)) {
-                    aimAngle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
-                } else if (controlMode === 'pc') {
-                    aimAngle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
-                } else {
-                    aimAngle = 0;
-                }
-            } else { // Other players, just draw them without specific aim based on THIS client's mouse
-                aimAngle = 0; // Or get their aim angle from server if transmitted
-            }
-            
-            ctx.rotate(aimAngle);
-
-            const bodyWidth = p.radius * 1.6;
-            const bodyHeight = p.radius * 3;
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-bodyWidth / 2, -bodyHeight / 2 + p.radius * 0.5, bodyWidth, bodyHeight * 0.8);
-
+        function drawPlayer(p) {
             ctx.beginPath();
-            ctx.arc(0, -bodyHeight / 2 + p.radius * 0.5, p.radius * 0.9, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
             ctx.fill();
-            const headGradient = ctx.createRadialGradient(
-                p.radius * 0.3, -bodyHeight / 2 + p.radius * 0.5 - p.radius * 0.3, p.radius * 0.1,
-                0, -bodyHeight / 2 + p.radius * 0.5, p.radius * 0.9
-            );
-            headGradient.addColorStop(0, 'rgba(255,255,255,0.3)');
-            headGradient.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = headGradient;
-            ctx.fill();
-
-            ctx.fillStyle = '#7f8c8d';
-            ctx.fillRect(p.radius * 0.8, 10, 20, 8);
-            ctx.fillRect(p.radius, -2, 40, 10);
-            ctx.fillStyle = '#c0c0c0';
-            ctx.fillRect(p.radius + 40, -1, 5, 3);
-
-            ctx.restore();
-
-            // Draw player ID above head
-            ctx.fillStyle = '#ecf0f1';
-            ctx.font = '12px "Press Start 2P"';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(p.id.substring(0, 8), p.x, p.y - p.radius - 20); // Display first 8 chars of ID
-
-            // Draw knife visual effect (if active for this player)
-            if (p.knifeEffectActive && (Date.now() - p.knifeEffectStartTime < KNIFE_EFFECT_DURATION)) {
-                const progress = (Date.now() - p.knifeEffectStartTime) / KNIFE_EFFECT_DURATION;
-                const currentRadius = p.radius + KNIFE_RADIUS * progress;
-                const currentOpacity = 0.8 * (1 - progress);
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, currentRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 255, 0, ${currentOpacity})`;
-                ctx.lineWidth = 3;
-                ctx.stroke();
-            } else {
-                p.knifeEffectActive = false; // Reset if duration passed
-            }
-        }
-
-        function drawZombie(zombie) {
-            ctx.save();
-            ctx.translate(zombie.x, zombie.y);
-
-            const animationTime = Date.now() * ZOMBIE_LEG_SPEED * zombie.speed;
-            const legAngle = Math.sin(animationTime) * 0.4;
-
-            const legWidth = zombie.radius * 0.3;
-            const legHeight = zombie.radius * 1.2;
-            const bodyBottomY = zombie.radius * 1.0;
-
-            // Left Leg
-            ctx.save();
-            ctx.translate(-zombie.radius * 0.4, bodyBottomY);
-            ctx.rotate(legAngle);
-            ctx.fillStyle = '#1e8449';
-            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight);
-            ctx.restore();
-
-            // Right Leg
-            ctx.save();
-            ctx.translate(zombie.radius * 0.4, bodyBottomY);
-            ctx.rotate(-legAngle);
-            ctx.fillStyle = '#1e8449';
-            ctx.fillRect(-legWidth / 2, 0, legWidth, legHeight);
-            ctx.restore();
-
-            // Body
-            ctx.fillStyle = '#27ae60';
-            ctx.beginPath();
-            ctx.moveTo(0, -zombie.radius * 1.2);
-            ctx.quadraticCurveTo(zombie.radius * 1.2, -zombie.radius * 0.5, zombie.radius * 0.8, zombie.radius * 1.5);
-            ctx.quadraticCurveTo(0, zombie.radius * 1.8, -zombie.radius * 0.8, zombie.radius * 1.5);
-            ctx.quadraticCurveTo(-zombie.radius * 1.2, -zombie.radius * 0.5, 0, -zombie.radius * 1.2);
-            ctx.closePath();
-            ctx.fill();
-
-            const bodyGradient = ctx.createRadialGradient(0, 0, zombie.radius * 0.5, 0, 0, zombie.radius * 1.5);
-            bodyGradient.addColorStop(0, 'rgba(0,0,0,0)');
-            bodyGradient.addColorStop(1, 'rgba(0,0,0,0.2)');
-            ctx.fillStyle = bodyGradient;
-            ctx.fill();
-
-            // Head
-            ctx.fillStyle = '#2ecc71';
-            ctx.beginPath();
-            ctx.arc(0, -zombie.radius * 1.2, zombie.radius * 0.8, 0, Math.PI * 2);
-            ctx.fill();
-            const headGradient = ctx.createRadialGradient(
-                zombie.radius * 0.2, -zombie.radius * 1.2 - zombie.radius * 0.2, zombie.radius * 0.1,
-                0, -zombie.radius * 1.2, zombie.radius * 0.8
-            );
-            headGradient.addColorStop(0, 'rgba(255,255,255,0.3)');
-            headGradient.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = headGradient;
-            ctx.fill();
-
-            // Eyes
-            ctx.fillStyle = '#e74c3c';
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#e74c3c';
-            ctx.beginPath();
-            ctx.arc(-zombie.radius * 0.3, -zombie.radius * 1.3, zombie.radius * 0.15, 0, Math.PI * 2);
-            ctx.arc(zombie.radius * 0.3, -zombie.radius * 1.3, zombie.radius * 0.15, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // Mouth
-            ctx.fillStyle = '#8b0000';
-            ctx.beginPath();
-            ctx.ellipse(0, -zombie.radius * 0.8, zombie.radius * 0.4, zombie.radius * 0.15, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#ecf0f1';
-            for(let i = -2; i <= 2; i++) {
-                ctx.fillRect(i * (zombie.radius * 0.15), -zombie.radius * 0.8 - zombie.radius * 0.1, zombie.radius * 0.1, zombie.radius * 0.1);
-            }
-
-            // Health bar
-            const healthBarWidth = zombie.radius * 2;
-            const healthBarHeight = 3;
-            const healthPercentage = zombie.health / zombie.maxHealth;
-            ctx.fillStyle = 'red';
-            ctx.fillRect(-zombie.radius, -zombie.radius * 2.2 - healthBarHeight, healthBarWidth, healthBarHeight);
-            ctx.fillStyle = 'lime';
-            ctx.fillRect(-zombie.radius, -zombie.radius * 2.2 - healthBarHeight, healthBarWidth * healthPercentage, healthBarHeight);
-
-            ctx.restore();
-        }
-
-        function drawBullet(bullet) {
-            ctx.save();
-            ctx.translate(bullet.x, bullet.y);
-
-            const angle = Math.atan2(bullet.vy, bullet.vx);
-            ctx.rotate(angle);
-
-            ctx.fillStyle = bullet.color;
-            ctx.beginPath();
-            ctx.moveTo(0, -bullet.radius / 2);
-            ctx.lineTo(bullet.length, -bullet.radius / 2);
-            ctx.lineTo(bullet.length + bullet.radius * 0.5, 0);
-            ctx.lineTo(bullet.length, bullet.radius / 2);
-            ctx.lineTo(0, bullet.radius / 2);
-            ctx.closePath();
-            ctx.fill();
-
-            const trailLength = bullet.length * 1.5;
-            const trailGradient = ctx.createLinearGradient(-trailLength, 0, 0, 0);
-            trailGradient.addColorStop(0, `rgba(${parseInt(bullet.color.slice(1,3), 16)}, ${parseInt(bullet.color.slice(3,5), 16)}, ${parseInt(bullet.color.slice(5,7), 16)}, 0)`);
-            trailGradient.addColorStop(0.5, `rgba(${parseInt(bullet.color.slice(1,3), 16)}, ${parseInt(bullet.color.slice(3,5), 16)}, ${parseInt(bullet.color.slice(5,7), 16)}, 0.4)`);
-            trailGradient.addColorStop(1, `rgba(${parseInt(bullet.color.slice(1,3), 16)}, ${parseInt(bullet.color.slice(3,5), 16)}, ${parseInt(bullet.color.slice(5,7), 16)}, 0.8)`);
-            ctx.fillStyle = trailGradient;
-            ctx.fillRect(-trailLength, -bullet.radius / 2, trailLength, bullet.radius);
-
-            ctx.restore();
-        }
-
-        function drawGrenade(grenade) {
-            ctx.save();
-            ctx.translate(grenade.x, grenade.y);
-
-            ctx.beginPath();
-            ctx.arc(0, 0, grenade.radius, 0, Math.PI * 2);
-            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, grenade.radius);
-            gradient.addColorStop(0, '#a83232');
-            gradient.addColorStop(0.7, '#6b2020');
-            gradient.addColorStop(1, '#4a1515');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-            ctx.lineWidth = 1;
-            for(let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.arc(0, 0, grenade.radius * (0.5 + i * 0.2), 0, Math.PI * 2);
-                ctx.stroke();
-            }
-
-            ctx.fillStyle = '#c0c0c0';
-            ctx.fillRect(-2, -grenade.radius - 8, 4, 10);
-            ctx.beginPath();
-            ctx.arc(0, -grenade.radius - 8, 4, Math.PI, Math.PI * 2);
-            ctx.fill();
-            ctx.fillRect(-1, -grenade.radius - 12, 2, 4);
-
-            const currentTime = Date.now();
-            if (grenade.explosionTime - currentTime < 500 && grenade.explosionTime > currentTime) {
-                const progress = 1 - ((grenade.explosionTime - currentTime) / 500);
-                const baseRadius = GRENADE_RADIUS * 2;
-                const currentExplosionRadius = baseRadius + (GRENADE_EXPLOSION_RADIUS - baseRadius) * progress;
-
-                ctx.beginPath();
-                ctx.arc(0, 0, currentExplosionRadius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 165, 0, ${0.9 - progress * 0.9})`;
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.arc(0, 0, currentExplosionRadius * 0.7, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 69, 0, ${0.9 - progress * 0.9})`;
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.arc(0, 0, currentExplosionRadius * 0.4, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 0, ${0.9 - progress * 0.9})`;
-                ctx.fill();
-
-                for(let i = 0; i < 5; i++) {
-                    const particleRadius = 5 * (1 - progress);
-                    const particleAngle = Math.random() * Math.PI * 2;
-                    const particleDistance = currentExplosionRadius * Math.random();
-                    ctx.beginPath();
-                    ctx.arc(Math.cos(particleAngle) * particleDistance, Math.sin(particleAngle) * particleDistance, particleRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(100, 100, 100, ${1 - progress})`;
-                    ctx.fill();
-                }
-            }
-
-            ctx.restore();
-        }
-
-        function drawPowerUpBox(box) {
-            ctx.save();
-            ctx.translate(box.x, box.y);
-
-            ctx.fillStyle = '#9e73d6';
-            ctx.beginPath();
-            ctx.arc(0, -box.height / 2 - 25, 30, Math.PI, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(-15, -box.height / 2 - 25);
-            ctx.lineTo(-10, -box.height / 2 - 45);
-            ctx.lineTo(0, -box.height / 2 - 25);
-            ctx.lineTo(10, -box.height / 2 - 45);
-            ctx.lineTo(15, -box.height / 2 - 25);
-            ctx.stroke();
-
-            ctx.strokeStyle = '#c0c0c0';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(-25, -25);
-            ctx.lineTo(-box.width / 2, -box.height / 2);
-            ctx.moveTo(25, -25);
-            ctx.lineTo(box.width / 2, -box.height / 2);
-            ctx.stroke();
-
-            let boxColor, iconText, iconColor, accentColor;
-            switch(box.type) {
-                case 'sonicBlaster':
-                    boxColor = '#28a745';
-                    accentColor = '#1e7e34';
-                    iconText = '⚡';
-                    iconColor = '#f1c40f';
-                    break;
-                case 'healthPack':
-                    boxColor = '#dc3545';
-                    accentColor = '#b31f2f';
-                    iconText = '✚';
-                    iconColor = '#ecf0f1';
-                    break;
-                case 'grenadeResupply':
-                    boxColor = '#007bff';
-                    accentColor = '#0056b3';
-                    iconText = '💣';
-                    iconColor = '#ecf0f1';
-                    break;
-                case 'ammoRefill':
-                    boxColor = '#6f42c1';
-                    accentColor = '#4a2f86';
-                    iconText = '🔥';
-                    iconColor = '#ecf0f1';
-                    break;
-                default:
-                    boxColor = '#6c757d';
-                    accentColor = '#5a6268';
-                    iconText = '?';
-                    iconColor = '#ecf0f1';
-            }
-
-            ctx.fillStyle = boxColor;
-            ctx.fillRect(-box.width / 2, -box.height / 2, box.width, box.height);
-
-            ctx.fillStyle = accentColor;
-            ctx.beginPath();
-            ctx.moveTo(-box.width / 2, -box.height / 2);
-            ctx.lineTo(-box.width / 2 + 5, -box.height / 2 - 5);
-            ctx.lineTo(box.width / 2 + 5, -box.height / 2 - 5);
-            ctx.lineTo(box.width / 2, -box.height / 2);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(box.width / 2, -box.height / 2);
-            ctx.lineTo(box.width / 2 + 5, -box.height / 2 - 5);
-            ctx.lineTo(box.width / 2 + 5, box.height / 2 - 5);
-            ctx.lineTo(box.width / 2, box.height / 2);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.strokeStyle = '#ecf0f1';
+            ctx.strokeStyle = '#2c3e50';
             ctx.lineWidth = 2;
-            ctx.strokeRect(-box.width / 2, -box.height / 2, box.width, box.height);
+            ctx.stroke();
+            ctx.closePath();
 
-            ctx.fillStyle = iconColor;
-            ctx.font = '20px "Press Start 2P"';
+            // Draw player orientation (where they are looking/shooting)
+            if (myPlayerId && p.id === myPlayerId) {
+                let angle;
+                // If Omni-Blaster, direction is not relevant for single-target aim
+                if (p.currentGun && p.currentGun.name === 'Omni-Blaster') {
+                    // Omni-Blaster doesn't need a specific aim line
+                } else if (controlMode === 'pc') {
+                    angle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
+                } else { // Mobile mode, use joystick input for direction if active
+                    if (joystick.active && (player.mobileVx !== 0 || player.mobileVy !== 0)) {
+                        angle = Math.atan2(player.mobileVy, player.mobileVx);
+                    } else {
+                        // Default to looking right if no movement input
+                        angle = 0; 
+                    }
+                }
+                // Only draw aiming line if not Omni-Blaster
+                if (!p.currentGun || p.currentGun.name !== 'Omni-Blaster') {
+                    const lineLength = p.radius + 10;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x + Math.cos(angle) * lineLength, p.y + Math.sin(angle) * lineLength);
+                    ctx.strokeStyle = '#ecf0f1';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.closePath();
+                }
+            }
+
+            // Draw player ID
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '8px "Press Start 2P"';
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(iconText, 0, 0);
+            ctx.fillText(p.id.substring(0, 4), p.x, p.y - p.radius - 5); // Display first 4 chars of ID
+        }
 
-            const healthBarWidth = box.width * 0.8;
+        function drawZombie(z) {
+            ctx.beginPath();
+            ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+            ctx.fillStyle = z.color;
+            ctx.fill();
+            ctx.strokeStyle = '#27ae60';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+
+            // Draw health bar
+            const healthBarWidth = 30;
             const healthBarHeight = 5;
-            const healthPercentage = box.health / box.maxHealth;
-            ctx.fillStyle = 'red';
-            ctx.fillRect(-healthBarWidth / 2, box.height / 2 + 10, healthBarWidth, healthBarHeight);
-            ctx.fillStyle = 'lime';
-            ctx.fillRect(-healthBarWidth / 2, box.height / 2 + 10, healthBarWidth * healthPercentage, healthBarHeight);
+            const healthPercentage = z.health / ZOMBIE_MAX_HEALTH;
+            ctx.fillStyle = '#c0392b'; // Red for missing health
+            ctx.fillRect(z.x - healthBarWidth / 2, z.y - z.radius - healthBarHeight - 5, healthBarWidth, healthBarHeight);
+            ctx.fillStyle = '#2ecc71'; // Green for current health
+            ctx.fillRect(z.x - healthBarWidth / 2, z.y - z.radius - healthBarHeight - 5, healthBarWidth * healthPercentage, healthBarHeight);
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(z.x - healthBarWidth / 2, z.y - z.radius - healthBarHeight - 5, healthBarWidth, healthBarHeight);
 
-            ctx.restore();
-        }
+            // Draw zombie legs for walking animation (client-side visual flair)
+            const legLength = z.radius * 0.8;
+            const legAngleOffset = Math.sin(Date.now() * ZOMBIE_LEG_SPEED) * ZOMBIE_LEG_AMPLITUDE;
 
-        function drawPowerUpCollectable(collectable) {
-            ctx.save();
-            ctx.translate(collectable.x, collectable.y);
-
-            let iconText, iconColor;
-            switch(collectable.type) {
-                case 'sonicBlaster':
-                    iconText = '⚡';
-                    iconColor = '#f1c40f';
-                    break;
-                case 'healthPack':
-                    iconText = '✚';
-                    iconColor = '#ecf0f1';
-                    break;
-                case 'grenadeResupply':
-                    iconText = '💣';
-                    iconColor = '#ecf0f1';
-                    break;
-                case 'ammoRefill':
-                    iconText = '🔥';
-                    iconColor = '#ecf0f1';
-                    break;
-                default:
-                    iconText = '?';
-                    iconColor = '#ecf0f1';
+            // Simple movement direction for legs
+            let moveAngle = 0;
+            if (z.vx !== 0 || z.vy !== 0) {
+                moveAngle = Math.atan2(z.vy, z.vx);
             }
 
-            ctx.fillStyle = iconColor;
-            ctx.font = '25px "Press Start 2P"';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(iconText, 0, 0);
+            // Left leg
+            ctx.beginPath();
+            ctx.moveTo(z.x, z.y);
+            ctx.lineTo(z.x + Math.cos(moveAngle + legAngleOffset) * legLength, z.y + Math.sin(moveAngle + legAngleOffset) * legLength);
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 3;
+            ctx.stroke();
 
-            const currentTime = Date.now();
-            if (collectable.explosionTime && currentTime < collectable.explosionTime) {
-                const progress = 1 - ((collectable.explosionTime - currentTime) / 200);
-                const currentRadius = COLLECTABLE_EXPLOSION_RADIUS * progress;
+            // Right leg
+            ctx.beginPath();
+            ctx.moveTo(z.x, z.y);
+            ctx.lineTo(z.x + Math.cos(moveAngle - legAngleOffset) * legLength, z.y + Math.sin(moveAngle - legAngleOffset) * legLength);
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
 
-                ctx.beginPath();
-                ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 0, ${1 - progress})`;
+        function drawBullet(b) {
+            ctx.beginPath();
+            if (b.gunType === 'shotgun') {
+                // Shotgun bullets can be larger or multiple pellets
+                ctx.rect(b.x - b.length / 2, b.y - b.length / 4, b.length, b.length / 2);
+                ctx.fillStyle = b.color;
                 ctx.fill();
-
-                ctx.beginPath();
-                ctx.arc(0, 0, currentRadius * 0.7, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 100, 0, ${1 - progress})`;
+            } else {
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fillStyle = b.color;
                 ctx.fill();
             }
-
-            ctx.restore();
+            ctx.closePath();
         }
 
-        // --- Game Logic Updates (client-side relevant parts) ---
+        function updateUI() {
+            if (!myPlayerId || !players[myPlayerId]) return;
 
-        function updatePlayer(deltaTime) {
-            // Only update local input, server handles authoritative position
-            let dx = 0;
-            let dy = 0;
+            // Update UI elements based on the local client's state.
+            // Game score, health, etc. are updated via socket.on('gameUpdate') and specific updates from server.
+            // But if there's a delay, we want to ensure immediate feedback on client-side ammo/grenades.
 
-            if (controlMode === 'pc') {
-                if (keys['KeyW']) dy -= player.speed;
-                if (keys['KeyS']) dy += player.speed;
-                if (keys['KeyA']) dx -= player.speed;
-                if (keys['KeyD']) dx += player.speed;
-
-                if (dx !== 0 && dy !== 0) {
-                    const magnitude = Math.sqrt(dx * dx + dy * dy);
-                    dx = (dx / magnitude) * player.speed;
-                    dy = (dy / magnitude) * player.speed;
+            waveDisplay.textContent = `Wave: ${currentWave}`;
+            zombiesLeftDisplay.textContent = `Zombies Left: ${Object.keys(zombies).length}`;
+            grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
+            
+            // Check if player.currentGun is defined before accessing its properties
+            if (player.currentGun) {
+                currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
+                if (player.currentGun.isMelee || player.currentGun.name === 'Omni-Blaster') { // Omni-Blaster has infinite ammo
+                    ammoDisplay.textContent = `Ammo: ∞`;
+                } else {
+                    ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
                 }
-
-                // Send movement to server, server will update `player.x` and `player.y` in `gameUpdate`
-                socket.emit('playerMove', { x: player.x + dx, y: player.y + dy });
-
-                if (mouse.pressed && player.currentGun) {
-                    const currentTime = Date.now();
-                    if (currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
-                        socket.emit('playerShoot', { targetX: mouse.x, targetY: mouse.y });
-                        playerAmmo -= player.currentGun.ammoPerShot; 
-                        ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
-                        mouse.lastShotTime = currentTime; 
-                    }
-                }
-            } else if (controlMode === 'mobile') {
-                // Send mobile movement to server
-                socket.emit('playerMove', { x: player.x + (player.mobileVx || 0), y: player.y + (player.mobileVy || 0) });
-
-                if (fireButtonState.active && player.currentGun) {
-                    const currentTime = Date.now();
-                    if (currentTime - mouse.lastShotTime > player.currentGun.fireRate && playerAmmo >= player.currentGun.ammoPerShot) {
-                        socket.emit('playerShoot', { targetX: mouse.x, targetY: mouse.y });
-                        playerAmmo -= player.currentGun.ammoPerShot;
-                        ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
-                        mouse.lastShotTime = currentTime;
-                    }
-                }
+            } else {
+                currentWeaponDisplay.textContent = `Weapon: --`;
+                ammoDisplay.textContent = `Ammo: -- / --`;
             }
-            // Client-side clamping (server will also do this authoritatively)
-            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-        }
 
-        // --- Other update functions (now mostly handled server-side) ---
-        // These are mostly empty or client-side visual only now, as server is authoritative
-        function shootBullet() { /* Server broadcasts new bullet data */ }
-        function throwGrenade() { /* To be implemented server-side */ }
-        function updateBullets() { /* Server sends bullet updates */ }
-        function spawnPowerUpBox() { /* Server might handle this */ }
-        function updatePowerUpBoxes() { /* Server might handle this */ }
-        function updatePowerUpCollectables() { /* Server might handle this */ }
-        function spawnZombie() { /* Server handles this */ }
-        function updateWaves() { /* Server handles this */ }
-        function updateZombies() { /* Server handles this */ }
+            // Update knife effect visibility (controlled by socket.on('knifeEffect'))
+            // This is primarily for visual feedback on the local client
+            const now = Date.now();
+            if (player.knifeEffectActive && (now - player.knifeEffectStartTime) < KNIFE_EFFECT_DURATION) {
+                knifeEffectElement.style.display = 'block';
+                knifeEffectElement.style.opacity = '1';
+                knifeEffectElement.style.transform = 'scale(1)';
+            } else {
+                knifeEffectElement.style.opacity = '0';
+                knifeEffectElement.style.transform = 'scale(0)';
+                knifeEffectElement.style.display = 'none';
+                player.knifeEffectActive = false; // Ensure it's false when effect ends
+            }
+        }
 
 
         // --- Main Game Loop ---
-        let lastTime = 0;
-        function gameLoop(currentTime) {
-            if (gameState !== 'playing') return;
 
-            const deltaTime = currentTime - lastTime;
-            lastTime = currentTime;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Update local player input and send to server
-            updatePlayer(deltaTime);
-
-            // Drawing all entities based on the latest state from the server
-            for (const pId in players) {
-                drawPlayer(players[pId]);
+        function gameLoop() {
+            if (gameState !== 'playing') {
+                // Only request animation frame if game is playing
+                // This prevents the loop from running when in menu or game over state
+                return; 
             }
-            for (const bId in bullets) {
-                drawBullet(bullets[bId]);
-            }
-            for (const zId in zombies) {
-                drawZombie(zombies[zId]);
-            }
-            
-            // These remain client-side for now, unless moved to server
-            grenades.forEach(drawGrenade);
-            powerUpBoxes.forEach(drawPowerUpBox);
-            powerUpCollectables.forEach(drawPowerUpCollectable);
 
-            // Update text displays based on locally updated values or server values
-            // (Health, Score, Zombies Left updated from server via 'gameUpdate' or specific events)
-            zombiesLeftDisplay.textContent = `Zombies Left: ${Object.keys(zombies).length}`; // Based on current visible zombies
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
 
-            requestAnimationFrame(gameLoop);
+            // Update client-side player movement and shooting
+            updatePlayerMovement();
+            updatePlayerShooting();
+
+            // Draw all bullets
+            for (const bulletId in bullets) {
+                drawBullet(bullets[bulletId]);
+            }
+
+            // Draw all zombies
+            for (const zombieId in zombies) {
+                drawZombie(zombies[zombieId]);
+            }
+
+            // Draw all players
+            for (const playerId in players) {
+                drawPlayer(players[playerId]);
+            }
+
+            updateUI(); // Update UI elements
+
+            requestAnimationFrame(gameLoop); // Continue the loop
         }
 
+        // Initialize the game when the window loads
         window.onload = function() {
-            joystick.baseX = 20 + joystick.baseRadius;
-            joystick.baseY = canvas.height - 20 - joystick.baseRadius;
-
-            fireButtonState.x = canvas.width - 30 - fireButtonState.radius;
-            fireButtonState.y = canvas.height - 30 - fireButtonState.radius;
-
-            joystickBaseElement.style.left = `${joystick.baseX - joystick.baseRadius}px`;
-            joystickBaseElement.style.top = `${joystick.baseY - joystick.baseRadius}px`;
-
-            fireButtonElement.style.left = `${fireButtonState.x - fireButtonState.radius}px`;
-            fireButtonElement.style.top = `${fireButtonState.y - fireButtonState.radius}px`;
-
-            joystickStickElement.style.left = `${joystick.baseRadius - joystick.stickRadius}px`;
-            joystickStickElement.style.top = `${joystick.baseRadius - joystick.stickRadius}px`;
-
             initGame();
         };
 
