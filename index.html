@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zombie Survival Game (Single Player)</title>
+    <title>Zombie Survival Game (Single Player - Final)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -46,14 +46,14 @@
             background-color: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
-            justify-content: space-around;
+            justify-content: space-around; /* Adjusted for better vertical spacing */
             align-items: center;
             text-align: center;
             z-index: 10;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.5s ease, visibility 0.5s ease;
-            padding: 10px;
+            padding: 10px; /* Reduced padding */
             box-sizing: border-box;
         }
 
@@ -112,8 +112,8 @@
             background-color: #34495e;
             border: 3px solid #bdc3c7;
             border-radius: 10px;
-            padding: 15px;
-            width: 130px;
+            padding: 10px;
+            width: 130px; /* Reduced width to fit on screen */
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
@@ -123,12 +123,12 @@
         .gun-card h3 {
             margin-top: 0;
             margin-bottom: 8px;
-            font-size: 1.2em;
+            font-size: 1.1em;
             color: #3498db;
         }
 
         .gun-card p {
-            font-size: 0.8em;
+            font-size: 0.7em;
             margin-bottom: 4px;
         }
 
@@ -149,6 +149,7 @@
             color: #ecf0f1;
         }
 
+        /* UI Overlays */
         #gameScore, #gameHealth, #grenadeCount, #currentWeaponDisplay, #waveDisplay, #ammoDisplay, #zombiesLeftDisplay {
             position: absolute;
             font-size: 1.2em;
@@ -180,7 +181,7 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
             display: none;
         }
-
+        
         #controlModeSelection {
             display: flex;
             gap: 15px;
@@ -206,11 +207,6 @@
             box-shadow: 0 0 15px rgba(46, 204, 113, 0.6);
         }
 
-        #controlModeSelection button:hover {
-            background-color: #5d6d7e;
-        }
-
-
         #mobileControls {
             position: absolute;
             top: 0;
@@ -222,52 +218,17 @@
             z-index: 8;
         }
 
-        .virtual-joystick, .fire-button {
-            position: absolute;
-            border-radius: 50%;
-            background-color: rgba(127, 140, 141, 0.5);
-            border: 2px solid #bdc3c7;
-            touch-action: none;
-            pointer-events: auto;
-        }
-
-        .virtual-joystick {
-            width: 120px;
-            height: 120px;
-        }
-
-        .joystick-stick {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background-color: rgba(189, 195, 199, 0.7);
-            border-radius: 50%;
-            border: 2px solid #ecf0f1;
-        }
-
-        .fire-button {
-            width: 100px;
-            height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(231, 76, 60, 0.5);
-            border: 2px solid #e74c3c;
-            color: #ecf0f1;
-            font-size: 24px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
-        /* Style for the knife attack visual effect */
-        .knife-effect {
+        /* Knife effect needs to be positioned absolutely within gameContainer */
+        #knifeEffect {
             position: absolute;
             border: 3px solid rgba(255, 255, 0, 0.8);
             border-radius: 50%;
             background-color: rgba(255, 255, 0, 0.2);
             transition: transform 0.1s ease-out, opacity 0.1s ease-out;
             opacity: 0;
-            pointer-events: none; /* Ensure it doesn't block other inputs */
+            pointer-events: none;
             transform: scale(0);
-            display: none; /* Hidden by default */
+            display: none; 
         }
     </style>
 </head>
@@ -284,7 +245,6 @@
                     <h3>Pistol</h3>
                     <p>Damage: 20</p>
                     <p>Fire Rate: 300ms</p>
-                    <p>Bullet Speed: 7</p>
                     <p>Ammo: 100</p>
                 </div>
                 <div class="gun-card" data-gun="shotgun">
@@ -292,7 +252,6 @@
                     <h3>Shotgun</h3>
                     <p>Damage: 50</p>
                     <p>Fire Rate: 800ms</p>
-                    <p>Bullet Speed: 5</p>
                     <p>Ammo: 1000</p>
                 </div>
                 <div class="gun-card" data-gun="assaultRifle">
@@ -300,7 +259,6 @@
                     <h3>Assault Rifle</h3>
                     <p>Damage: 15</p>
                     <p>Fire Rate: 100ms</p>
-                    <p>Bullet Speed: 9</p>
                     <p>Ammo: 300</p>
                 </div>
                 <div class="gun-card" data-gun="knife">
@@ -308,8 +266,7 @@
                     <h3>Knife</h3>
                     <p>Damage: 70</p>
                     <p>Cooldown: 1.5s</p>
-                    <p>Range: Melee</p>
-                    <p>Ammo: Infinite</p>
+                    <p>Ammo: Inf</p>
                 </div>
             </div>
             <div id="controlModeSelection">
@@ -329,27 +286,25 @@
         <div id="grenadeCount">Grenades: 3</div>
         <div id="gameScore">Score: 0</div>
         <div id="gameHealth">Health: 100</div>
-        <div id="currentWeaponDisplay">Weapon: Pistol</div>
+        <div id="currentWeaponDisplay">Weapon: --</div>
         <div id="ammoDisplay">Ammo: -- / --</div>
 
         <div id="messageBox"></div>
 
         <div id="mobileControls">
-            <div id="joystickBase" class="virtual-joystick">
-                <div id="joystickStick" class="joystick-stick"></div>
             </div>
-            <div id="fireButton" class="fire-button">FIRE</div>
-        </div>
-        <div id="knifeEffect" class="knife-effect"></div>
+        <div id="knifeEffect"></div>
 
     </div>
 
     <script>
-        // Canvas and Context setup
+        // --- Setup ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const WIDTH = canvas.width;
+        const HEIGHT = canvas.height;
 
-        // --- Game Constants (Client-Managed) ---
+        // --- Game Constants ---
         const GRENADE_SPEED = 10;
         const GRENADE_RADIUS = 8;
         const GRENADE_EXPLOSION_DELAY = 2000;
@@ -357,71 +312,46 @@
         const GRENADE_DAMAGE = 80;
         const GRENADE_FRICTION = 0.98;
 
-        const POWERUP_BOX_WIDTH = 40;
-        const POWERUP_BOX_HEIGHT = 40;
-        const POWERUP_BOX_HEALTH = 200;
-        const POWERUP_BOX_DROP_SPEED = 0.5;
-        const MIN_POWERUP_SPAWN_INTERVAL = 5000;
-        const MAX_POWERUP_SPAWN_INTERVAL = 10000;
-
-        const COLLECTABLE_SPEED = 15;
-        const COLLECTABLE_EXPLOSION_RADIUS = 30;
-        const COLLECTABLE_EXPLOSION_DAMAGE = 10;
-        const COLLECTABLE_PUSH_FORCE = 30;
-
-        const HEALTH_PACK_AMOUNT = 30;
-        const GRENADE_REFILL_AMOUNT = 3;
-
-        const ZOMBIE_RADIUS = 20;
+        const ZOMBIE_RADIUS = 15; // Slightly reduced radius for better gameplay
         const ZOMBIE_MAX_HEALTH = 100;
         const ZOMBIE_BASE_SPEED = 0.5;
         const ZOMBIE_SPAWN_INTERVAL = 1000;
-        const ZOMBIE_BITE_RADIUS = 25;
         const ZOMBIE_BITE_DAMAGE = 5;
         const ZOMBIE_BITE_INTERVAL = 1000;
+        const ZOMBIE_BITE_RADIUS = 15 + 15; // Zombie Radius + Player Radius
         const ZOMBIE_LEG_AMPLITUDE = 0.8;
         const ZOMBIE_LEG_SPEED = 0.05;
 
         const INTERMISSION_DURATION = 3000;
-
         const KNIFE_RADIUS = 70;
         const KNIFE_COOLDOWN = 1500;
         const KNIFE_EFFECT_DURATION = 150;
         const KNIFE_DAMAGE = 70;
 
-        // --- Game State Variables (All client-managed now) ---
+        // --- Game State Variables ---
         let gameState = 'start';
-        let score = 0;
         let playerHealth = 100;
         let grenadeCount = 3;
         let playerAmmo = 0;
-        let lastBiteTime = 0; // For zombie damage rate
-        let lastShotTime = 0; // For player fire rate
-        let lastPowerupSpawn = 0;
+        let lastShotTime = 0;
+        let lastZombieSpawnTime = 0;
+        let gameLoopHandle;
 
-        // "Multiplayer" states converted to Single-Player
         let player = {
-            id: 'localPlayer', // Give it a fixed ID
-            x: canvas.width / 2,
-            y: canvas.height / 2,
+            id: 'localPlayer', 
+            x: WIDTH / 2,
+            y: HEIGHT / 2,
             radius: 15,
             speed: 3,
             color: '#3498db',
             currentGun: null,
-            mobileVx: 0,
-            mobileVy: 0,
             lastKnifeTime: 0,
-            knifeEffectActive: false,
-            knifeEffectStartTime: 0,
-            health: 100, // Added health back to player object for convenience
-            score: 0,    // Added score back
+            score: 0,
         };
 
-        let zombies = {}; // Stores all active zombies
-        let bullets = {}; // Stores all active bullets
-        let grenades = {}; // Stores active grenades
-        let powerupBoxes = {}; // Stores active powerup boxes
-
+        let zombies = {};
+        let bullets = {};
+        let grenades = {};
         let keys = {};
         let mouse = { x: 0, y: 0, pressed: false };
 
@@ -432,19 +362,10 @@
         let waveInProgress = false;
         let waveIntermission = false;
         let intermissionStartTime = 0;
-        let lastZombieSpawnTime = 0;
 
         let controlMode = 'pc';
-        let currentInputType = 'mouse';
 
-        const joystick = {
-            baseX: 0, baseY: 0, baseRadius: 60, stickRadius: 30, active: false, touchId: null
-        };
-        const fireButtonState = {
-            x: 0, y: 0, radius: 50, active: false, touchId: null
-        };
-
-        // UI Elements (references) - remain the same
+        // --- DOM Elements ---
         const startMenu = document.getElementById('startMenu');
         const gameOverMenu = document.getElementById('gameOverMenu');
         const startGameButton = document.getElementById('startGameButton');
@@ -459,47 +380,52 @@
         const zombiesLeftDisplay = document.getElementById('zombiesLeftDisplay');
         const gunCards = document.querySelectorAll('.gun-card');
         const messageBox = document.getElementById('messageBox');
-        const pcModeButton = document.getElementById('pcModeButton');
-        const mobileControlsDiv = document.getElementById('mobileControls');
-        const joystickBaseElement = document.getElementById('joystickBase');
-        const joystickStickElement = document.getElementById('joystickStick');
-        const fireButtonElement = document.getElementById('fireButton');
         const knifeEffectElement = document.getElementById('knifeEffect');
 
-        // Gun Configurations - remain the same
+        // --- Gun Configurations ---
         const guns = {
-            pistol: { name: 'Pistol', damage: 20, fireRate: 300, bulletSpeed: 7, bulletColor: '#f39c12', bulletLength: 10, maxAmmo: 100, ammoPerShot: 1, icon: 'fas fa-gun', isMelee: false },
-            shotgun: { name: 'Shotgun', damage: 50, fireRate: 800, bulletSpeed: 5, bulletColor: '#e67e22', bulletLength: 12, maxAmmo: 1000, ammoPerShot: 5, icon: 'fas fa-crosshairs', isMelee: false },
-            assaultRifle: { name: 'Assault Rifle', damage: 15, fireRate: 100, bulletSpeed: 9, bulletColor: '#f1c40f', bulletLength: 8, maxAmmo: 300, ammoPerShot: 1, icon: 'fas fa-rifle', isMelee: false },
-            knife: { name: 'Knife', damage: KNIFE_DAMAGE, cooldown: KNIFE_COOLDOWN, icon: 'fas fa-knife', isMelee: true, maxAmmo: Infinity, ammoPerShot: 0 },
-            omniBlaster: { name: 'Omni-Blaster', damage: 25, fireRate: 200, bulletSpeed: 25, bulletColor: '#34d9eb', bulletLength: 15, maxAmmo: Infinity, ammoPerShot: 0, icon: 'fas fa-circle', isMelee: false, bulletsPerShot: 16 }
+            pistol: { name: 'Pistol', damage: 20, fireRate: 300, bulletSpeed: 7, bulletColor: '#f39c12', bulletRadius: 3, maxAmmo: 100, ammoPerShot: 1, isMelee: false },
+            shotgun: { name: 'Shotgun', damage: 50, fireRate: 800, bulletSpeed: 5, bulletColor: '#e67e22', bulletRadius: 4, maxAmmo: 1000, ammoPerShot: 5, isMelee: false },
+            assaultRifle: { name: 'Assault Rifle', damage: 15, fireRate: 100, bulletSpeed: 9, bulletColor: '#f1c40f', bulletRadius: 2, maxAmmo: 300, ammoPerShot: 1, isMelee: false },
+            knife: { name: 'Knife', damage: KNIFE_DAMAGE, cooldown: KNIFE_COOLDOWN, isMelee: true, maxAmmo: Infinity, ammoPerShot: 0 },
         };
 
-        // Utility function for collision detection
-        function checkCollision(obj1, obj2) {
-            const dx = obj1.x - obj2.x;
-            const dy = obj1.y - obj2.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            return distance < obj1.radius + obj2.radius;
-        }
-
-        // Generate a unique ID for local entities
+        // Utility function to generate unique ID
         let entityIdCounter = 0;
         function generateId() {
             return `local-${entityIdCounter++}`;
         }
 
-        // --- Game Logic Functions (Adapted from Server/Client) ---
+        // --- UI Functions ---
+        function showMessage(text, duration = 1000) {
+            messageBox.textContent = text;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, duration);
+        }
 
+        // --- Game Control ---
+        
         function spawnZombie() {
             if (zombiesSpawnedThisWave >= zombiesToSpawnThisWave) return;
 
-            // Simple wave function: Increase zombie speed and health per wave
             const waveMultiplier = 1 + (currentWave - 1) * 0.1;
+
+            // Determine spawn point (must be outside the canvas)
+            let x, y;
+            if (Math.random() < 0.5) { // Spawn on top/bottom edge
+                x = Math.random() * WIDTH;
+                y = Math.random() < 0.5 ? -ZOMBIE_RADIUS : HEIGHT + ZOMBIE_RADIUS;
+            } else { // Spawn on left/right edge
+                x = Math.random() < 0.5 ? -ZOMBIE_RADIUS : WIDTH + ZOMBIE_RADIUS;
+                y = Math.random() * HEIGHT;
+            }
+
             const newZombie = {
                 id: generateId(),
-                x: Math.random() < 0.5 ? (Math.random() < 0.5 ? -ZOMBIE_RADIUS : canvas.width + ZOMBIE_RADIUS) : (player.x < canvas.width / 2 ? canvas.width + ZOMBIE_RADIUS : -ZOMBIE_RADIUS),
-                y: Math.random() * canvas.height,
+                x: x,
+                y: y,
                 radius: ZOMBIE_RADIUS,
                 health: ZOMBIE_MAX_HEALTH * waveMultiplier,
                 maxHealth: ZOMBIE_MAX_HEALTH * waveMultiplier,
@@ -508,15 +434,6 @@
                 lastBite: Date.now(),
                 legOffset: 0
             };
-
-            // Randomly position on the edges of the map
-            if (Math.random() < 0.5) { // Spawn on top/bottom
-                newZombie.x = Math.random() * canvas.width;
-                newZombie.y = Math.random() < 0.5 ? -ZOMBIE_RADIUS : canvas.height + ZOMBIE_RADIUS;
-            } else { // Spawn on left/right
-                newZombie.x = Math.random() < 0.5 ? -ZOMBIE_RADIUS : canvas.width + ZOMBIE_RADIUS;
-                newZombie.y = Math.random() * canvas.height;
-            }
 
             zombies[newZombie.id] = newZombie;
             zombiesSpawnedThisWave++;
@@ -533,7 +450,6 @@
             zombiesToSpawnThisWave = 5 + currentWave * 3;
             zombiesSpawnedThisWave = 0;
             lastZombieSpawnTime = Date.now();
-            lastPowerupSpawn = Date.now() + MIN_POWERUP_SPAWN_INTERVAL;
 
             showMessage(`Wave ${currentWave} Incoming!`, INTERMISSION_DURATION);
         }
@@ -541,9 +457,8 @@
         function gameOver() {
             gameState = 'gameOver';
             cancelAnimationFrame(gameLoopHandle);
-            finalScoreSpan.textContent = currentWave;
+            finalScoreSpan.textContent = currentWave - 1; // Show last completed wave
             gameOverMenu.classList.add('active');
-            mobileControlsDiv.style.display = 'none';
         }
 
         function startGame() {
@@ -551,10 +466,9 @@
 
             gameState = 'playing';
             startMenu.classList.remove('active');
-            gameOverMenu.classList.remove('active');
-
-            // Setup initial player state
-            player.health = 100;
+            
+            // Initialize player state
+            playerHealth = 100;
             player.score = 0;
             grenadeCount = 3;
             if (player.currentGun.isMelee) {
@@ -562,8 +476,10 @@
             } else {
                 playerAmmo = player.currentGun.maxAmmo;
             }
-            lastShotTime = 0;
-            lastBiteTime = 0;
+
+            // Reset player position
+            player.x = WIDTH / 2;
+            player.y = HEIGHT / 2;
             
             // Start the first wave
             nextWave();
@@ -573,8 +489,8 @@
         }
 
         function initGame() {
+            // Reset all state variables
             gameState = 'start';
-            score = 0;
             playerHealth = 100;
             grenadeCount = 3;
             playerAmmo = 0;
@@ -582,17 +498,10 @@
             zombies = {};
             bullets = {};
             grenades = {};
-            powerupBoxes = {};
-            entityIdCounter = 0; // Reset ID counter
+            entityIdCounter = 0;
+            player.currentGun = null; // Forces re-selection
             
-            // Reset player-specific state
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            player.health = 100;
-            player.score = 0;
-            player.lastKnifeTime = 0;
-            
-            // Update display
+            // Reset UI
             gameScoreDisplay.textContent = 'Score: 0';
             gameHealthDisplay.textContent = 'Health: 100';
             grenadeCountDisplay.textContent = 'Grenades: 3';
@@ -604,11 +513,9 @@
             startMenu.classList.add('active');
             gameOverMenu.classList.remove('active');
 
-            player.currentGun = null;
             gunCards.forEach(c => c.classList.remove('selected'));
             startGameButton.disabled = true;
             
-            // Ensure no rogue loop is running
             if (window.gameLoopHandle) {
                 cancelAnimationFrame(window.gameLoopHandle);
             }
@@ -621,98 +528,71 @@
             const gun = player.currentGun;
             
             if (!gun || gun.isMelee) return;
-
             if (playerAmmo < gun.ammoPerShot) {
                 showMessage("OUT OF AMMO!", 500);
                 return;
             }
-            
             if (now - lastShotTime < gun.fireRate) {
                 return;
             }
 
-            // Shotgun fires multiple bullets
+            const dx = mouse.x - player.x;
+            const dy = mouse.y - player.y;
+            const baseAngle = Math.atan2(dy, dx);
+            
+            let bulletsToFire = [];
+            
             if (gun.name === 'Shotgun') {
                 const numPellets = 5;
                 const spread = 0.5; // radians
-                const dx = mouse.x - player.x;
-                const dy = mouse.y - player.y;
-                const baseAngle = Math.atan2(dy, dx);
-                
                 for (let i = 0; i < numPellets; i++) {
                     const angleOffset = (Math.random() - 0.5) * spread;
                     const bulletAngle = baseAngle + angleOffset;
-
-                    bullets[generateId()] = {
-                        id: generateId(),
-                        x: player.x,
-                        y: player.y,
+                    bulletsToFire.push({
                         vx: Math.cos(bulletAngle) * gun.bulletSpeed,
-                        vy: Math.sin(bulletAngle) * gun.bulletSpeed,
-                        damage: gun.damage,
-                        radius: 5,
-                        color: gun.bulletColor,
-                        length: gun.bulletLength
-                    };
+                        vy: Math.sin(bulletAngle) * gun.bulletSpeed
+                    });
                 }
-            } 
-            // Omni-Blaster fires a circular burst
-            else if (gun.name === 'Omni-Blaster') {
-                const numBullets = gun.bulletsPerShot;
-                for (let i = 0; i < numBullets; i++) {
-                    const angle = (i * (2 * Math.PI)) / numBullets;
-                    
-                    bullets[generateId()] = {
-                        id: generateId(),
-                        x: player.x,
-                        y: player.y,
-                        vx: Math.cos(angle) * gun.bulletSpeed,
-                        vy: Math.sin(angle) * gun.bulletSpeed,
-                        damage: gun.damage,
-                        radius: 5,
-                        color: gun.bulletColor,
-                        length: gun.bulletLength
-                    };
-                }
+            } else { // Pistol and Assault Rifle
+                bulletsToFire.push({
+                    vx: Math.cos(baseAngle) * gun.bulletSpeed,
+                    vy: Math.sin(baseAngle) * gun.bulletSpeed
+                });
             }
-            // Standard guns
-            else {
-                const dx = mouse.x - player.x;
-                const dy = mouse.y - player.y;
-                const angle = Math.atan2(dy, dx);
-                
+
+            for (const b of bulletsToFire) {
                 bullets[generateId()] = {
                     id: generateId(),
                     x: player.x,
                     y: player.y,
-                    vx: Math.cos(angle) * gun.bulletSpeed,
-                    vy: Math.sin(angle) * gun.bulletSpeed,
+                    vx: b.vx,
+                    vy: b.vy,
                     damage: gun.damage,
-                    radius: 5,
+                    radius: gun.bulletRadius, // Using bulletRadius from config
                     color: gun.bulletColor,
-                    length: gun.bulletLength
                 };
             }
 
-            playerAmmo -= gun.ammoPerShot;
+            if (gun.maxAmmo !== Infinity) {
+                playerAmmo -= gun.ammoPerShot;
+            }
             lastShotTime = now;
         }
         
         function performKnifeAttack() {
             const now = Date.now();
-            const gun = player.currentGun;
-
-            if (gun.name !== 'Knife' || now - player.lastKnifeTime < KNIFE_COOLDOWN) {
+            if (player.currentGun.name !== 'Knife' || now - player.lastKnifeTime < KNIFE_COOLDOWN) {
                 return;
             }
 
             player.lastKnifeTime = now;
 
             // Trigger the local visual effect
-            knifeEffectElement.style.display = 'block';
             const effectSize = KNIFE_RADIUS * 2;
+            knifeEffectElement.style.display = 'block';
             knifeEffectElement.style.width = `${effectSize}px`;
             knifeEffectElement.style.height = `${effectSize}px`;
+            // Position the effect based on player center
             knifeEffectElement.style.left = `${player.x - KNIFE_RADIUS}px`;
             knifeEffectElement.style.top = `${player.y - KNIFE_RADIUS}px`;
             knifeEffectElement.style.opacity = '1';
@@ -721,39 +601,34 @@
             setTimeout(() => {
                 knifeEffectElement.style.opacity = '0';
                 knifeEffectElement.style.transform = 'scale(0)';
+                // Remove display property after transition for efficiency
                 setTimeout(() => {
                     knifeEffectElement.style.display = 'none';
-                }, 500);
+                }, 500); 
             }, KNIFE_EFFECT_DURATION);
 
-            // Knife collision check (Melee is client-side only in SP mode)
+            // Knife collision check
             for (const id in zombies) {
                 const zombie = zombies[id];
-                const dx = player.x - zombie.x;
-                const dy = player.y - zombie.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                const distance = Math.hypot(player.x - zombie.x, player.y - zombie.y);
 
                 if (distance < KNIFE_RADIUS + zombie.radius) {
-                    // Apply damage
                     zombie.health -= KNIFE_DAMAGE;
-                    if (zombie.health <= 0) {
-                        delete zombies[id];
-                        zombiesKilledThisWave++;
-                        player.score += 10;
-                    }
                 }
             }
         }
 
         function throwGrenade() {
-            if (grenadeCount <= 0) return;
+            if (grenadeCount <= 0) {
+                showMessage("NO GRENADES!", 500);
+                return;
+            }
 
             const dx = mouse.x - player.x;
             const dy = mouse.y - player.y;
             const angle = Math.atan2(dy, dx);
             
             grenadeCount--;
-            grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
 
             const newGrenade = {
                 id: generateId(),
@@ -768,66 +643,68 @@
             grenades[newGrenade.id] = newGrenade;
         }
 
-        // --- Collision and Update Logic (Moved from Server) ---
+
+        // --- Update Logic ---
 
         function updatePlayerPosition() {
             let dx = 0;
             let dy = 0;
 
             if (controlMode === 'pc') {
-                if (keys['KeyW'] || keys['ArrowUp']) dx = 0, dy = -player.speed;
-                if (keys['KeyS'] || keys['ArrowDown']) dx = 0, dy = player.speed;
-                if (keys['KeyA'] || keys['ArrowLeft']) dx = -player.speed, dy = 0;
-                if (keys['KeyD'] || keys['ArrowRight']) dx = player.speed, dy = 0;
+                if (keys['KeyW'] || keys['ArrowUp']) dy = -player.speed;
+                if (keys['KeyS'] || keys['ArrowDown']) dy = player.speed;
+                if (keys['KeyA'] || keys['ArrowLeft']) dx = -player.speed;
+                if (keys['KeyD'] || keys['ArrowRight']) dx = player.speed;
 
                 // Diagonal movement normalization
                 if (dx !== 0 && dy !== 0) {
                     const length = Math.sqrt(dx * dx + dy * dy);
-                    dx = (dx / length) * player.speed;
-                    dy = (dy / length) * player.speed;
+                    const scale = player.speed / length;
+                    dx *= scale;
+                    dy *= scale;
                 }
-            } else { // Mobile controls
-                dx = player.mobileVx;
-                dy = player.mobileVy;
-            }
-
+            } 
+            // NOTE: Mobile control logic (player.mobileVx/Vy) is disabled in this SP version
+            
             player.x += dx;
             player.y += dy;
 
-            // Clamp player position within canvas bounds
-            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+            // Clamp player position
+            player.x = Math.max(player.radius, Math.min(WIDTH - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(HEIGHT - player.radius, player.y));
         }
 
         function updateGameEntities() {
             const now = Date.now();
 
-            // 1. Player Attack
-            if (mouse.pressed && player.currentGun && !player.currentGun.isMelee) {
-                fireBullet();
-            } else if (mouse.pressed && player.currentGun && player.currentGun.name === 'Knife') {
-                performKnifeAttack();
+            // 1. Player Attack Input Handling
+            if (mouse.pressed) {
+                if (player.currentGun && player.currentGun.isMelee) {
+                    performKnifeAttack();
+                } else if (player.currentGun && !player.currentGun.isMelee) {
+                    fireBullet();
+                }
             }
 
-            // 2. Update Bullets
+            // 2. Update Bullets and Bullet-Zombie Collision
             for (const id in bullets) {
                 const bullet = bullets[id];
                 bullet.x += bullet.vx;
                 bullet.y += bullet.vy;
 
                 // Check boundary collision
-                if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+                if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
                     delete bullets[id];
                     continue;
                 }
 
-                // Bullet-Zombie collision
+                let bulletHit = false;
                 for (const zombieId in zombies) {
                     const zombie = zombies[zombieId];
                     const dist = Math.hypot(bullet.x - zombie.x, bullet.y - zombie.y);
                     if (dist < zombie.radius) {
                         zombie.health -= bullet.damage;
-                        delete bullets[id]; // Bullet is destroyed
+                        bulletHit = true; 
                         
                         if (zombie.health <= 0) {
                             delete zombies[zombieId];
@@ -837,9 +714,12 @@
                         break;
                     }
                 }
+                if (bulletHit) {
+                    delete bullets[id];
+                }
             }
 
-            // 3. Update Zombies
+            // 3. Update Zombies and Zombie-Player Collision
             for (const id in zombies) {
                 const zombie = zombies[id];
                 
@@ -853,12 +733,13 @@
                 zombie.y += Math.sin(angle) * zombie.speed;
 
                 // Zombie-Player collision (Bite)
-                if (distance < ZOMBIE_BITE_RADIUS + player.radius) {
+                if (distance < ZOMBIE_BITE_RADIUS) {
                     if (now - zombie.lastBite > ZOMBIE_BITE_INTERVAL) {
-                        player.health -= ZOMBIE_BITE_DAMAGE;
+                        playerHealth -= ZOMBIE_BITE_DAMAGE;
                         zombie.lastBite = now;
-                        if (player.health <= 0) {
+                        if (playerHealth <= 0) {
                             gameOver();
+                            return; // Exit if player dies
                         }
                     }
                 }
@@ -867,12 +748,12 @@
                 zombie.legOffset = (zombie.legOffset + ZOMBIE_LEG_SPEED) % (2 * Math.PI);
             }
             
-            // 4. Update Grenades
+            // 4. Update Grenades and Grenade Collision
             for (const id in grenades) {
                 const grenade = grenades[id];
 
                 if (!grenade.exploded) {
-                    // Apply velocity and friction
+                    // Movement and friction
                     grenade.x += grenade.vx;
                     grenade.y += grenade.vy;
                     grenade.vx *= GRENADE_FRICTION;
@@ -881,31 +762,33 @@
                     // Check for explosion time
                     if (now - grenade.startTime > GRENADE_EXPLOSION_DELAY) {
                         grenade.exploded = true;
+                        
                         // Explosion logic
                         for (const zombieId in zombies) {
                             const zombie = zombies[zombieId];
                             const dist = Math.hypot(grenade.x - zombie.x, grenade.y - zombie.y);
-                            if (dist < GRENADE_EXPLOSION_RADIUS) {
+                            if (dist < GRENADE_EXPLOSION_RADIUS + zombie.radius) {
                                 // Simple distance-based damage falloff
-                                const damageFactor = 1 - (dist / GRENADE_EXPLOSION_RADIUS);
+                                const damageFactor = 1 - (dist / (GRENADE_EXPLOSION_RADIUS + zombie.radius));
                                 zombie.health -= GRENADE_DAMAGE * damageFactor;
-                                
-                                if (zombie.health <= 0) {
-                                    delete zombies[zombieId];
-                                    zombiesKilledThisWave++;
-                                    player.score += 10;
-                                }
                             }
                         }
-                        // Remove grenade after visual effect (next frame)
+                        // Queue up grenade removal to show explosion
+                        setTimeout(() => {
+                             delete grenades[id];
+                        }, 100); 
                     }
-                } else {
-                    delete grenades[id]; // Remove exploded grenade
                 }
             }
             
-            // 5. Update Powerup Boxes
-            // (Skipped for simplicity in this conversion, would require full powerup box implementation)
+            // Cleanup killed zombies after explosion/bullet loops
+            for (const id in zombies) {
+                if (zombies[id].health <= 0) {
+                    delete zombies[id];
+                    zombiesKilledThisWave++;
+                    player.score += 10;
+                }
+            }
         }
         
         function updateWaveState() {
@@ -914,7 +797,7 @@
             if (gameState !== 'playing') return;
             
             // Check for wave end
-            if (waveInProgress && zombiesToSpawnThisWave > 0 && zombiesKilledThisWave === zombiesToSpawnThisWave && Object.keys(zombies).length === 0) {
+            if (waveInProgress && zombiesKilledThisWave === zombiesToSpawnThisWave && Object.keys(zombies).length === 0) {
                 waveInProgress = false;
                 waveIntermission = true;
                 intermissionStartTime = now;
@@ -937,7 +820,7 @@
             // Update UI displays
             waveDisplay.textContent = `Wave: ${currentWave}`;
             zombiesLeftDisplay.textContent = `Zombies Left: ${Math.max(0, zombiesToSpawnThisWave - zombiesKilledThisWave)}`;
-            gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(player.health))}`;
+            gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(playerHealth))}`;
             gameScoreDisplay.textContent = `Score: ${player.score}`;
             grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
             
@@ -946,26 +829,22 @@
             } else {
                  ammoDisplay.textContent = `Ammo: -- / --`;
             }
-
-            // Powerup Spawning (Simple timer logic)
-            if (now > lastPowerupSpawn) {
-                // Implement powerup box spawning logic here if needed
-                lastPowerupSpawn = now + MIN_POWERUP_SPAWN_INTERVAL + Math.random() * (MAX_POWERUP_SPAWN_INTERVAL - MIN_POWERUP_SPAWN_INTERVAL);
-            }
         }
         
-        // --- Drawing Functions (Remain mostly the same) ---
+        // --- Drawing Functions ---
         
         function drawPlayer() {
+            if (!player) return; // Safety check
+
             // Draw health bar
             const healthBarWidth = 30;
             const healthBarHeight = 5;
-            const healthPercentage = player.health / 100;
+            const healthPercentage = playerHealth / 100;
             
-            ctx.fillStyle = '#c0392b'; // Red background
+            ctx.fillStyle = '#c0392b'; 
             ctx.fillRect(player.x - healthBarWidth / 2, player.y - player.radius - 10, healthBarWidth, healthBarHeight);
 
-            ctx.fillStyle = '#2ecc71'; // Green health
+            ctx.fillStyle = '#2ecc71'; 
             ctx.fillRect(player.x - healthBarWidth / 2, player.y - player.radius - 10, healthBarWidth * healthPercentage, healthBarHeight);
 
             // Draw player body
@@ -999,7 +878,7 @@
             ctx.fillStyle = '#c0392b';
             ctx.fillRect(zombie.x - healthBarWidth / 2, zombie.y - zombie.radius - 10, healthBarWidth, healthBarHeight);
             
-            ctx.fillStyle = '#f39c12'; // Orange/yellow zombie health
+            ctx.fillStyle = '#f39c12';
             ctx.fillRect(zombie.x - healthBarWidth / 2, zombie.y - zombie.radius - 10, healthBarWidth * healthPercentage, healthBarHeight);
 
             // Draw zombie body
@@ -1012,10 +891,10 @@
             const legSize = zombie.radius * 0.4;
             ctx.fillStyle = '#34495e';
             ctx.beginPath();
-            ctx.arc(zombie.x + Math.sin(zombie.legOffset) * ZOMBIE_LEG_AMPLITUDE * zombie.radius, 
-                    zombie.y + zombie.radius - 2, legSize, 0, Math.PI * 2);
-            ctx.arc(zombie.x - Math.sin(zombie.legOffset) * ZOMBIE_LEG_AMPLITUDE * zombie.radius, 
-                    zombie.y + zombie.radius - 2, legSize, 0, Math.PI * 2);
+            ctx.arc(zombie.x + Math.sin(zombie.legOffset) * ZOMBIE_LEG_AMPLITUDE * zombie.radius * 0.5, 
+                    zombie.y + zombie.radius * 0.8, legSize, 0, Math.PI * 2);
+            ctx.arc(zombie.x - Math.sin(zombie.legOffset) * ZOMBIE_LEG_AMPLITUDE * zombie.radius * 0.5, 
+                    zombie.y + zombie.radius * 0.8, legSize, 0, Math.PI * 2);
             ctx.fill();
             
             // Draw eyes
@@ -1034,10 +913,9 @@
         }
 
         function drawGrenade(grenade) {
-             ctx.fillStyle = grenade.exploded ? 'rgba(231, 76, 60, 0.5)' : grenade.color;
-            
+            // Draw explosion effect if exploded
             if (grenade.exploded) {
-                // Draw explosion radius
+                ctx.fillStyle = 'rgba(231, 76, 60, 0.5)';
                 ctx.beginPath();
                 ctx.arc(grenade.x, grenade.y, GRENADE_EXPLOSION_RADIUS, 0, Math.PI * 2);
                 ctx.fill();
@@ -1051,11 +929,13 @@
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+            // 1. Always clear the canvas first
+            ctx.clearRect(0, 0, WIDTH, HEIGHT); 
 
-            if (gameState !== 'playing') return;
+            // 2. ONLY draw the game entities if the state is 'playing'
+            if (gameState !== 'playing') return; 
 
-            // Draw Entities
+            // Draw Entities (Order matters: Grenades -> Zombies -> Bullets -> Player)
             for (const id in grenades) { drawGrenade(grenades[id]); }
             for (const id in zombies) { drawZombie(zombies[id]); }
             for (const id in bullets) { drawBullet(bullets[id]); }
@@ -1063,31 +943,36 @@
         }
 
         // --- Main Game Loop ---
-        let gameLoopHandle;
         let lastTime = 0;
         
         function gameLoop(currentTime) {
-            if (gameState !== 'playing') return;
+            if (gameState !== 'playing') {
+                 // Important: Still request frame to re-enter loop if state changes later
+                 gameLoopHandle = requestAnimationFrame(gameLoop); 
+                 return;
+            }
 
+            // Update logic is independent of time in this fixed-speed game
+            // but deltaTime calculation is good practice.
             const deltaTime = currentTime - lastTime;
             lastTime = currentTime;
 
-            // 1. Process Input and Update Player Position
+            // 1. Update Position & Input
             updatePlayerPosition();
             
-            // 2. Update all Game Entities (Movement, Collisions, Damage)
+            // 2. Update Entities
             updateGameEntities();
             
-            // 3. Game State Management (Waves, Scoring, Health Check)
+            // 3. Game State
             updateWaveState();
 
-            // 4. Draw Everything
+            // 4. Draw
             draw();
 
             gameLoopHandle = requestAnimationFrame(gameLoop);
         }
 
-        // --- Event Listeners (Removed Server-Emitting code) ---
+        // --- Event Listeners ---
         
         window.addEventListener('keydown', (e) => {
             if (controlMode === 'pc' && gameState === 'playing') {
@@ -1095,17 +980,10 @@
                 if (e.code === 'KeyG') {
                     throwGrenade();
                 }
-                if (e.code === 'KeyM') {
-                    // Only perform knife attack on keydown for immediate feedback
+                if (e.code === 'KeyM' && player.currentGun.name === 'Knife') {
+                    // Knife logic is now handled by mouse down/key down in the game loop for consistency,
+                    // but we ensure immediate action on key press
                     performKnifeAttack();
-                }
-                if (e.code === 'KeyP') {
-                    // Temporary Powerup acquire (now local)
-                    player.currentGun = guns['omniBlaster'];
-                    playerAmmo = guns['omniBlaster'].maxAmmo;
-                    currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
-                    ammoDisplay.textContent = `Ammo: ∞`;
-                    showMessage("Omni-Blaster Acquired!", 1500);
                 }
             }
         });
@@ -1127,17 +1005,6 @@
         canvas.addEventListener('mousedown', (e) => {
             if (controlMode === 'pc' && gameState === 'playing' && e.button === 0) {
                 mouse.pressed = true;
-                // Immediate fire for non-automatic weapons (or continuous fire in gameLoop)
-                if (player.currentGun && (player.currentGun.fireRate > 200 || player.currentGun.isMelee)) {
-                    // Small delay prevents double fire
-                    if (Date.now() - lastShotTime > 100) { 
-                        if (player.currentGun.isMelee) {
-                            performKnifeAttack();
-                        } else {
-                            fireBullet();
-                        }
-                    }
-                }
             }
         });
 
@@ -1147,20 +1014,8 @@
             }
         });
 
-        // Touch handlers (simplified for single player, aiming logic removed)
-        function handleTouchStart(e) { /* ... mobile logic ... */ }
-        function handleTouchMove(e) { /* ... mobile logic ... */ }
-        function handleTouchEnd(e) { /* ... mobile logic ... */ }
-
         // Start/Restart logic
-        startGameButton.addEventListener('click', () => {
-            if (player.currentGun) {
-                // Removed: socket.emit('selectGun', ...)
-                startGame();
-            } else {
-                showMessage("Please select a gun first!");
-            }
-        });
+        startGameButton.addEventListener('click', startGame);
 
         restartGameButton.addEventListener('click', () => {
             initGame();
@@ -1173,37 +1028,18 @@
                 card.classList.add('selected');
                 const selectedGunType = card.dataset.gun;
                 
-                if (selectedGunType === 'omniBlaster') {
-                    showMessage("Omni-Blaster is a powerup, not a starting weapon!", 2000);
-                    card.classList.remove('selected');
-                    startGameButton.disabled = true;
-                    player.currentGun = null;
-                    currentWeaponDisplay.textContent = `Weapon: --`;
-                    ammoDisplay.textContent = `Ammo: -- / --`;
-                    return;
-                }
-
                 const gunConfig = guns[selectedGunType];
-                player.currentGun = gunConfig; // Directly update player object
+                player.currentGun = gunConfig;
 
-                // Set initial ammo
                 playerAmmo = gunConfig.isMelee ? Infinity : gunConfig.maxAmmo;
                 
-                // Update UI
                 currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
                 ammoDisplay.textContent = player.currentGun.isMelee ? `Ammo: ∞` : `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
                 startGameButton.disabled = false;
             });
         });
 
-        pcModeButton.addEventListener('click', () => {
-            controlMode = 'pc';
-            currentInputType = 'mouse';
-            pcModeButton.classList.add('selected-control');
-            mobileControlsDiv.style.display = 'none';
-        });
-
-        // Initial setup
+        // Initial setup run
         initGame();
     </script>
 </body>
