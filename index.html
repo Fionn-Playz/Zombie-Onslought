@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zombie Survival Game (Single Player - Final)</title>
+    <title>Zombie Survival Game (Wave Progression Fixed)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -46,14 +46,14 @@
             background-color: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
-            justify-content: space-around; /* Adjusted for better vertical spacing */
+            justify-content: space-around;
             align-items: center;
             text-align: center;
             z-index: 10;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.5s ease, visibility 0.5s ease;
-            padding: 10px; /* Reduced padding */
+            padding: 10px;
             box-sizing: border-box;
         }
 
@@ -113,7 +113,7 @@
             border: 3px solid #bdc3c7;
             border-radius: 10px;
             padding: 10px;
-            width: 130px; /* Reduced width to fit on screen */
+            width: 130px;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
@@ -207,18 +207,6 @@
             box-shadow: 0 0 15px rgba(46, 204, 113, 0.6);
         }
 
-        #mobileControls {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: none;
-            z-index: 8;
-        }
-
-        /* Knife effect needs to be positioned absolutely within gameContainer */
         #knifeEffect {
             position: absolute;
             border: 3px solid rgba(255, 255, 0, 0.8);
@@ -236,6 +224,7 @@
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
 
+        <!-- Start Menu -->
         <div id="startMenu" class="game-menu active">
             <h1>ZOMBIE ONSLAUGHT</h1>
             <h2>SELECT YOUR WEAPON</h2>
@@ -275,6 +264,7 @@
             <button id="startGameButton" disabled>START GAME</button>
         </div>
 
+        <!-- Game Over Menu -->
         <div id="gameOverMenu" class="game-menu">
             <h1>GAME OVER!</h1>
             <h2>You survived for <span id="finalScore">0</span> waves!</h2>
@@ -290,9 +280,6 @@
         <div id="ammoDisplay">Ammo: -- / --</div>
 
         <div id="messageBox"></div>
-
-        <div id="mobileControls">
-            </div>
         <div id="knifeEffect"></div>
 
     </div>
@@ -312,24 +299,22 @@
         const GRENADE_DAMAGE = 80;
         const GRENADE_FRICTION = 0.98;
 
-        const ZOMBIE_RADIUS = 15; // Slightly reduced radius for better gameplay
+        const ZOMBIE_RADIUS = 15;
         const ZOMBIE_MAX_HEALTH = 100;
         const ZOMBIE_BASE_SPEED = 0.5;
         const ZOMBIE_SPAWN_INTERVAL = 1000;
         const ZOMBIE_BITE_DAMAGE = 5;
         const ZOMBIE_BITE_INTERVAL = 1000;
-        const ZOMBIE_BITE_RADIUS = 15 + 15; // Zombie Radius + Player Radius
         const ZOMBIE_LEG_AMPLITUDE = 0.8;
         const ZOMBIE_LEG_SPEED = 0.05;
 
         const INTERMISSION_DURATION = 3000;
-        const KNIFE_RADIUS = 70;
         const KNIFE_COOLDOWN = 1500;
-        const KNIFE_EFFECT_DURATION = 150;
         const KNIFE_DAMAGE = 70;
-
+        const KNIFE_RADIUS = 70;
+        
         // --- Game State Variables ---
-        let gameState = 'start';
+        let gameState = 'playing'; // Default state should be set by start menu logic
         let playerHealth = 100;
         let grenadeCount = 3;
         let playerAmmo = 0;
@@ -352,19 +337,41 @@
         let zombies = {};
         let bullets = {};
         let grenades = {};
+        let powerups = {};
         let keys = {};
         let mouse = { x: 0, y: 0, pressed: false };
 
         let currentWave = 0;
         let zombiesToSpawnThisWave = 0;
         let zombiesSpawnedThisWave = 0;
-        let zombiesKilledThisWave = 0;
+        let zombiesKilledThisWave = 0; // The counter that wasn't incrementing!
         let waveInProgress = false;
         let waveIntermission = false;
         let intermissionStartTime = 0;
 
         let controlMode = 'pc';
 
+        // NEW: Laser Power-up State
+        let laserActive = false;
+        let originalGun = null;
+        
+        // --- Gun Configurations ---
+        const guns = {
+            pistol: { name: 'Pistol', damage: 20, fireRate: 300, bulletSpeed: 7, bulletColor: '#f39c12', bulletRadius: 3, maxAmmo: 100, ammoPerShot: 1, isMelee: false },
+            shotgun: { name: 'Shotgun', damage: 50, fireRate: 800, bulletSpeed: 5, bulletColor: '#e67e22', bulletRadius: 4, maxAmmo: 1000, ammoPerShot: 5, isMelee: false },
+            assaultRifle: { name: 'Assault Rifle', damage: 15, fireRate: 100, bulletSpeed: 9, bulletColor: '#f1c40f', bulletRadius: 2, maxAmmo: 300, ammoPerShot: 1, isMelee: false },
+            knife: { name: 'Knife', damage: KNIFE_DAMAGE, cooldown: KNIFE_COOLDOWN, isMelee: true, maxAmmo: Infinity, ammoPerShot: 0 },
+            // Permanent Laser Gun Configuration
+            laser: { name: 'P-Laser Beam', damage: 40, fireRate: 1, bulletSpeed: 20, bulletColor: '#3498db', bulletRadius: 5, maxAmmo: 1000000, ammoPerShot: 1, isMelee: false, isLaser: true },
+        };
+
+        // NEW: Power-up Configurations
+        const powerupConfigs = {
+            health: { name: 'Health Pack', color: '#2ecc71', radius: 10, effect: 'health', symbol: '+' },
+            grenade: { name: 'Grenade Pack', color: '#e74c3c', radius: 10, effect: 'grenade', symbol: 'G' },
+            laser: { name: 'P-Laser Gun', color: '#3498db', radius: 15, effect: 'laser', symbol: 'L' },
+        };
+        
         // --- DOM Elements ---
         const startMenu = document.getElementById('startMenu');
         const gameOverMenu = document.getElementById('gameOverMenu');
@@ -382,14 +389,6 @@
         const messageBox = document.getElementById('messageBox');
         const knifeEffectElement = document.getElementById('knifeEffect');
 
-        // --- Gun Configurations ---
-        const guns = {
-            pistol: { name: 'Pistol', damage: 20, fireRate: 300, bulletSpeed: 7, bulletColor: '#f39c12', bulletRadius: 3, maxAmmo: 100, ammoPerShot: 1, isMelee: false },
-            shotgun: { name: 'Shotgun', damage: 50, fireRate: 800, bulletSpeed: 5, bulletColor: '#e67e22', bulletRadius: 4, maxAmmo: 1000, ammoPerShot: 5, isMelee: false },
-            assaultRifle: { name: 'Assault Rifle', damage: 15, fireRate: 100, bulletSpeed: 9, bulletColor: '#f1c40f', bulletRadius: 2, maxAmmo: 300, ammoPerShot: 1, isMelee: false },
-            knife: { name: 'Knife', damage: KNIFE_DAMAGE, cooldown: KNIFE_COOLDOWN, isMelee: true, maxAmmo: Infinity, ammoPerShot: 0 },
-        };
-
         // Utility function to generate unique ID
         let entityIdCounter = 0;
         function generateId() {
@@ -405,11 +404,97 @@
             }, duration);
         }
 
+        function updateUI() {
+            gameHealthDisplay.textContent = `Health: ${playerHealth.toFixed(0)}`;
+            grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
+            gameScoreDisplay.textContent = `Score: ${player.score}`;
+            waveDisplay.textContent = `Wave: ${currentWave}`;
+            zombiesLeftDisplay.textContent = `Zombies Left: ${zombiesToSpawnThisWave - zombiesKilledThisWave}`;
+
+            if (player.currentGun) {
+                currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
+                if (player.currentGun.isMelee) {
+                    ammoDisplay.textContent = `Ammo: ∞`;
+                } else if (player.currentGun.isLaser) {
+                     // Since the laser is permanent, show its ridiculous ammo count
+                    ammoDisplay.textContent = `Ammo: ${playerAmmo.toLocaleString()} / ${player.currentGun.maxAmmo.toLocaleString()}`;
+                } else {
+                    ammoDisplay.textContent = `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+                }
+            } else {
+                currentWeaponDisplay.textContent = 'Weapon: --';
+                ammoDisplay.textContent = 'Ammo: -- / --';
+            }
+        }
+        
+        // --- Power-up Functions ---
+
+        function spawnRandomPowerup(x, y) {
+            // 20% chance to spawn a power-up
+            if (Math.random() > 0.2) return; 
+
+            const choices = Object.keys(powerupConfigs);
+            const randomKey = choices[Math.floor(Math.random() * choices.length)];
+            const config = powerupConfigs[randomKey];
+
+            powerups[generateId()] = {
+                id: generateId(),
+                x: x,
+                y: y,
+                radius: config.radius,
+                config: config,
+                spawnTime: Date.now()
+            };
+        }
+
+        function activateLaser() {
+            if (laserActive) {
+                // If already active, just refill the ammo
+                playerAmmo = guns.laser.maxAmmo;
+                showMessage("PERMANENT LASER AMMO REFILLED!", 1000);
+                return;
+            }
+
+            laserActive = true;
+            originalGun = player.currentGun; // Save current gun
+            player.currentGun = guns.laser; // Switch to permanent laser
+            playerAmmo = guns.laser.maxAmmo;
+            showMessage(`PERMANENT LASER BEAM ACQUIRED!`, 1500);
+        }
+
+        function deactivateLaser() {
+            // This function is now only used for game reset/game over
+            if (!laserActive) return;
+
+            laserActive = false;
+            // Restore original gun
+            player.currentGun = originalGun; 
+            
+            // Refill original gun ammo for convenience
+            playerAmmo = player.currentGun.isMelee ? Infinity : player.currentGun.maxAmmo; 
+
+            originalGun = null;
+            showMessage("WEAPON RESTORED.", 1500);
+        }
+
+        function applyPowerupEffect(effect) {
+            if (effect === 'health') {
+                playerHealth = Math.min(100, playerHealth + 50);
+                showMessage("HEALTH RESTORED (+50)", 1000);
+            } else if (effect === 'grenade') {
+                grenadeCount += 3;
+                showMessage("GRENADE SUPPLY (+3)", 1000);
+            } else if (effect === 'laser') {
+                activateLaser();
+            }
+        }
+
         // --- Game Control ---
         
         function spawnZombie() {
             if (zombiesSpawnedThisWave >= zombiesToSpawnThisWave) return;
 
+            // Increase difficulty based on wave
             const waveMultiplier = 1 + (currentWave - 1) * 0.1;
 
             // Determine spawn point (must be outside the canvas)
@@ -459,6 +544,9 @@
             cancelAnimationFrame(gameLoopHandle);
             finalScoreSpan.textContent = currentWave - 1; // Show last completed wave
             gameOverMenu.classList.add('active');
+            
+            // Deactivate laser if active for a clean reset
+            if (laserActive) deactivateLaser();
         }
 
         function startGame() {
@@ -476,171 +564,316 @@
             } else {
                 playerAmmo = player.currentGun.maxAmmo;
             }
-
-            // Reset player position
-            player.x = WIDTH / 2;
-            player.y = HEIGHT / 2;
             
-            // Start the first wave
-            nextWave();
-            
-            // Start the game loop
-            gameLoopHandle = requestAnimationFrame(gameLoop);
-        }
+            // Reset Laser state
+            laserActive = false;
+            originalGun = null;
 
-        function initGame() {
-            // Reset all state variables
-            gameState = 'start';
-            playerHealth = 100;
-            grenadeCount = 3;
-            playerAmmo = 0;
-            currentWave = 0;
+            // Clear entities
             zombies = {};
             bullets = {};
             grenades = {};
-            entityIdCounter = 0;
-            player.currentGun = null; // Forces re-selection
+            powerups = {};
             
-            // Reset UI
-            gameScoreDisplay.textContent = 'Score: 0';
-            gameHealthDisplay.textContent = 'Health: 100';
-            grenadeCountDisplay.textContent = 'Grenades: 3';
-            waveDisplay.textContent = 'Wave: 0';
-            zombiesLeftDisplay.textContent = 'Zombies Left: --';
-            currentWeaponDisplay.textContent = 'Weapon: --';
-            ammoDisplay.textContent = 'Ammo: -- / --';
+            currentWave = 0;
+            waveInProgress = false;
+            waveIntermission = true; // Start in intermission before wave 1
+            intermissionStartTime = Date.now();
 
-            startMenu.classList.add('active');
-            gameOverMenu.classList.remove('active');
-
-            gunCards.forEach(c => c.classList.remove('selected'));
-            startGameButton.disabled = true;
-            
-            if (window.gameLoopHandle) {
-                cancelAnimationFrame(window.gameLoopHandle);
-            }
+            gameLoopHandle = requestAnimationFrame(gameLoop);
         }
 
-        // --- Player Actions ---
-        
-        function fireBullet() {
+        function restartGame() {
+            // Reset all state variables
+            playerHealth = 100;
+            grenadeCount = 3;
+            player.score = 0;
+            
+            // Reset player position
+            player.x = WIDTH / 2;
+            player.y = HEIGHT / 2;
+
+            // Clear entity lists
+            zombies = {};
+            bullets = {};
+            grenades = {};
+            powerups = {};
+
+            // Reset wave tracking
+            currentWave = 0;
+            zombiesToSpawnThisWave = 0;
+            zombiesSpawnedThisWave = 0;
+            zombiesKilledThisWave = 0;
+            waveInProgress = false;
+            waveIntermission = false;
+            
+            // Go back to start menu to re-select gun
+            gameOverMenu.classList.remove('active');
+            gameState = 'start';
+            startMenu.classList.add('active');
+            player.currentGun = null; // Force selection again
+            startGameButton.disabled = true;
+            document.querySelectorAll('.gun-card').forEach(card => card.classList.remove('selected'));
+        }
+
+        function shoot() {
             const now = Date.now();
             const gun = player.currentGun;
-            
-            if (!gun || gun.isMelee) return;
-            if (playerAmmo < gun.ammoPerShot) {
-                showMessage("OUT OF AMMO!", 500);
-                return;
-            }
-            if (now - lastShotTime < gun.fireRate) {
-                return;
-            }
 
-            const dx = mouse.x - player.x;
-            const dy = mouse.y - player.y;
-            const baseAngle = Math.atan2(dy, dx);
-            
-            let bulletsToFire = [];
-            
-            if (gun.name === 'Shotgun') {
-                const numPellets = 5;
-                const spread = 0.5; // radians
-                for (let i = 0; i < numPellets; i++) {
-                    const angleOffset = (Math.random() - 0.5) * spread;
-                    const bulletAngle = baseAngle + angleOffset;
-                    bulletsToFire.push({
-                        vx: Math.cos(bulletAngle) * gun.bulletSpeed,
-                        vy: Math.sin(bulletAngle) * gun.bulletSpeed
+            if (gun.isMelee) {
+                if (now - player.lastKnifeTime >= gun.cooldown) {
+                    // Melee attack logic
+                    player.lastKnifeTime = now;
+                    player.score += 5; // Knife hit score
+
+                    // Show knife effect
+                    knifeEffectElement.style.display = 'block';
+                    knifeEffectElement.style.width = `${KNIFE_RADIUS * 2}px`;
+                    knifeEffectElement.style.height = `${KNIFE_RADIUS * 2}px`;
+                    knifeEffectElement.style.left = `${player.x - KNIFE_RADIUS}px`;
+                    knifeEffectElement.style.top = `${player.y - KNIFE_RADIUS}px`;
+                    knifeEffectElement.style.opacity = 1;
+                    knifeEffectElement.style.transform = 'scale(1)';
+
+                    setTimeout(() => {
+                        knifeEffectElement.style.opacity = 0;
+                        knifeEffectElement.style.transform = 'scale(0)';
+                        setTimeout(() => knifeEffectElement.style.display = 'none', 100);
+                    }, 50);
+
+                    // Collect zombies to be removed
+                    const zombiesToKnifeRemove = [];
+
+                    // Check for zombie hit within radius
+                    Object.values(zombies).forEach(zombie => {
+                        const dist = Math.hypot(player.x - zombie.x, player.y - zombie.y);
+                        if (dist < player.radius + KNIFE_RADIUS) {
+                            zombie.health -= gun.damage;
+                            if (zombie.health <= 0) {
+                                zombiesToKnifeRemove.push(zombie.id);
+                            }
+                        }
+                    });
+
+                    // Process removals, scoring, and kill count
+                    zombiesToKnifeRemove.forEach(id => {
+                        const killedZombie = zombies[id];
+                        if (killedZombie) {
+                            delete zombies[id];
+                            zombiesKilledThisWave++; // <--- FIX: Increment kill count on knife kill
+                            player.score += 100;
+                            spawnRandomPowerup(killedZombie.x, killedZombie.y);
+                        }
                     });
                 }
-            } else { // Pistol and Assault Rifle
-                bulletsToFire.push({
-                    vx: Math.cos(baseAngle) * gun.bulletSpeed,
-                    vy: Math.sin(baseAngle) * gun.bulletSpeed
-                });
+                return;
             }
 
-            for (const b of bulletsToFire) {
+            if (playerAmmo <= 0 || now - lastShotTime < gun.fireRate) {
+                if (playerAmmo <= 0) showMessage("OUT OF AMMO!", 500);
+                return;
+            }
+
+            lastShotTime = now;
+            playerAmmo -= gun.ammoPerShot;
+
+            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+
+            if (gun.name === 'Shotgun') {
+                // Shotgun fires multiple bullets in a spread
+                const spread = 0.2; // 0.2 radians spread
+                const numPellets = gun.ammoPerShot; 
+                for (let i = 0; i < numPellets; i++) {
+                    const offset = (Math.random() - 0.5) * spread;
+                    const bulletAngle = angle + offset;
+                    
+                    bullets[generateId()] = {
+                        id: generateId(),
+                        x: player.x,
+                        y: player.y,
+                        radius: gun.bulletRadius,
+                        color: gun.bulletColor,
+                        dx: Math.cos(bulletAngle) * gun.bulletSpeed,
+                        dy: Math.sin(bulletAngle) * gun.bulletSpeed,
+                        damage: gun.damage,
+                    };
+                }
+            } else {
+                // Single bullet fire for Pistol, AR, and Laser
                 bullets[generateId()] = {
                     id: generateId(),
                     x: player.x,
                     y: player.y,
-                    vx: b.vx,
-                    vy: b.vy,
-                    damage: gun.damage,
-                    radius: gun.bulletRadius, // Using bulletRadius from config
+                    radius: gun.bulletRadius,
                     color: gun.bulletColor,
+                    dx: Math.cos(angle) * gun.bulletSpeed,
+                    dy: Math.sin(angle) * gun.bulletSpeed,
+                    damage: gun.damage,
                 };
-            }
-
-            if (gun.maxAmmo !== Infinity) {
-                playerAmmo -= gun.ammoPerShot;
-            }
-            lastShotTime = now;
-        }
-        
-        function performKnifeAttack() {
-            const now = Date.now();
-            if (player.currentGun.name !== 'Knife' || now - player.lastKnifeTime < KNIFE_COOLDOWN) {
-                return;
-            }
-
-            player.lastKnifeTime = now;
-
-            // Trigger the local visual effect
-            const effectSize = KNIFE_RADIUS * 2;
-            knifeEffectElement.style.display = 'block';
-            knifeEffectElement.style.width = `${effectSize}px`;
-            knifeEffectElement.style.height = `${effectSize}px`;
-            // Position the effect based on player center
-            knifeEffectElement.style.left = `${player.x - KNIFE_RADIUS}px`;
-            knifeEffectElement.style.top = `${player.y - KNIFE_RADIUS}px`;
-            knifeEffectElement.style.opacity = '1';
-            knifeEffectElement.style.transform = 'scale(1)';
-
-            setTimeout(() => {
-                knifeEffectElement.style.opacity = '0';
-                knifeEffectElement.style.transform = 'scale(0)';
-                // Remove display property after transition for efficiency
-                setTimeout(() => {
-                    knifeEffectElement.style.display = 'none';
-                }, 500); 
-            }, KNIFE_EFFECT_DURATION);
-
-            // Knife collision check
-            for (const id in zombies) {
-                const zombie = zombies[id];
-                const distance = Math.hypot(player.x - zombie.x, player.y - zombie.y);
-
-                if (distance < KNIFE_RADIUS + zombie.radius) {
-                    zombie.health -= KNIFE_DAMAGE;
-                }
             }
         }
 
         function throwGrenade() {
             if (grenadeCount <= 0) {
-                showMessage("NO GRENADES!", 500);
+                showMessage("NO GRENADES LEFT!", 500);
                 return;
             }
 
-            const dx = mouse.x - player.x;
-            const dy = mouse.y - player.y;
-            const angle = Math.atan2(dy, dx);
-            
             grenadeCount--;
 
-            const newGrenade = {
+            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            
+            grenades[generateId()] = {
                 id: generateId(),
                 x: player.x,
                 y: player.y,
-                vx: Math.cos(angle) * GRENADE_SPEED,
-                vy: Math.sin(angle) * GRENADE_SPEED,
-                startTime: Date.now(),
-                exploded: false,
-                color: '#e74c3c'
+                radius: GRENADE_RADIUS,
+                color: '#8b0000',
+                dx: Math.cos(angle) * GRENADE_SPEED,
+                dy: Math.sin(angle) * GRENADE_SPEED,
+                isExploding: false,
+                explosionTime: Date.now() + GRENADE_EXPLOSION_DELAY,
+                explosionRadius: 0,
             };
-            grenades[newGrenade.id] = newGrenade;
+            player.score += 10;
+        }
+
+        // --- Drawing Functions ---
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw barrel
+            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            const barrelLength = player.radius + 10;
+            const barrelWidth = 5;
+
+            const barrelX = player.x + Math.cos(angle) * player.radius;
+            const barrelY = player.y + Math.sin(angle) * player.radius;
+
+            ctx.save();
+            ctx.translate(barrelX, barrelY);
+            ctx.rotate(angle);
+            
+            ctx.fillStyle = player.currentGun.isLaser ? '#3498db' : '#ecf0f1';
+            ctx.fillRect(0, -barrelWidth / 2, barrelLength, barrelWidth);
+            ctx.restore();
+        }
+
+        function drawZombies() {
+            Object.values(zombies).forEach(zombie => {
+                // Health Bar
+                const healthRatio = zombie.health / zombie.maxHealth;
+                const barWidth = zombie.radius * 2;
+                const barHeight = 4;
+                const barY = zombie.y - zombie.radius - 10;
+                const barX = zombie.x - zombie.radius;
+
+                ctx.fillStyle = '#c0392b';
+                ctx.fillRect(barX, barY, barWidth, barHeight);
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillRect(barX, barY, barWidth * healthRatio, barHeight);
+                ctx.strokeStyle = '#2c3e50';
+                ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+                // Body
+                ctx.fillStyle = zombie.color;
+                ctx.beginPath();
+                ctx.arc(zombie.x, zombie.y, zombie.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyes (Red and angry)
+                ctx.fillStyle = '#e74c3c';
+                const eyeOffset = zombie.radius * 0.4;
+                const eyeRadius = zombie.radius * 0.2;
+                
+                // Calculate direction towards player
+                const dx = player.x - zombie.x;
+                const dy = player.y - zombie.y;
+                const angle = Math.atan2(dy, dx);
+
+                // Eye position relative to direction
+                const eyeDist = zombie.radius * 0.5;
+                const eyeX1 = zombie.x + Math.cos(angle - 0.5) * eyeDist;
+                const eyeY1 = zombie.y + Math.sin(angle - 0.5) * eyeDist;
+                const eyeX2 = zombie.x + Math.cos(angle + 0.5) * eyeDist;
+                const eyeY2 = zombie.y + Math.sin(angle + 0.5) * eyeDist;
+
+
+                ctx.beginPath();
+                ctx.arc(eyeX1, eyeY1, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(eyeX2, eyeY2, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Legs (Simple moving animation)
+                const legXOffset = Math.sin(zombie.legOffset) * ZOMBIE_LEG_AMPLITUDE;
+                ctx.fillStyle = '#1e8449';
+                ctx.fillRect(zombie.x - 5 + legXOffset, zombie.y + zombie.radius, 5, 10);
+                ctx.fillRect(zombie.x + 0 - legXOffset, zombie.y + zombie.radius, 5, 10);
+            });
+        }
+
+        function drawBullets() {
+            Object.values(bullets).forEach(bullet => {
+                ctx.fillStyle = bullet.color;
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawGrenades() {
+            Object.values(grenades).forEach(grenade => {
+                if (grenade.isExploding) {
+                    // Explosion
+                    ctx.fillStyle = `rgba(231, 76, 60, ${1 - grenade.explosionRadius / GRENADE_EXPLOSION_RADIUS})`;
+                    ctx.beginPath();
+                    ctx.arc(grenade.x, grenade.y, grenade.explosionRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Grenade body (flashing red)
+                    const flash = Math.sin(Date.now() / 100) > 0 ? '#e74c3c' : '#c0392b';
+                    ctx.fillStyle = flash;
+                    ctx.beginPath();
+                    ctx.arc(grenade.x, grenade.y, grenade.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Fuse trail (yellow)
+                    ctx.strokeStyle = '#f1c40f';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(grenade.x, grenade.y);
+                    const fuseAngle = Math.atan2(-grenade.dy, -grenade.dx);
+                    const fuseLength = 10;
+                    ctx.lineTo(
+                        grenade.x + Math.cos(fuseAngle) * fuseLength,
+                        grenade.y + Math.sin(fuseAngle) * fuseLength
+                    );
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function drawPowerups() {
+            Object.values(powerups).forEach(pu => {
+                // Circle background
+                ctx.fillStyle = pu.config.color;
+                ctx.beginPath();
+                ctx.arc(pu.x, pu.y, pu.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Text symbol
+                ctx.fillStyle = '#2c3e50';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 12px "Press Start 2P"';
+                ctx.fillText(pu.config.symbol, pu.x, pu.y + 1); // +1 for better vertical alignment
+            });
         }
 
 
@@ -650,397 +883,284 @@
             let dx = 0;
             let dy = 0;
 
-            if (controlMode === 'pc') {
-                if (keys['KeyW'] || keys['ArrowUp']) dy = -player.speed;
-                if (keys['KeyS'] || keys['ArrowDown']) dy = player.speed;
-                if (keys['KeyA'] || keys['ArrowLeft']) dx = -player.speed;
-                if (keys['KeyD'] || keys['ArrowRight']) dx = player.speed;
+            if (keys['w'] || keys['W']) dy -= player.speed;
+            if (keys['s'] || keys['S']) dy += player.speed;
+            if (keys['a'] || keys['A']) dx -= player.speed;
+            if (keys['d'] || keys['D']) dx += player.speed;
 
-                // Diagonal movement normalization
-                if (dx !== 0 && dy !== 0) {
-                    const length = Math.sqrt(dx * dx + dy * dy);
-                    const scale = player.speed / length;
-                    dx *= scale;
-                    dy *= scale;
-                }
-            } 
-            // NOTE: Mobile control logic (player.mobileVx/Vy) is disabled in this SP version
-            
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                const magnitude = Math.sqrt(dx * dx + dy * dy);
+                dx = (dx / magnitude) * player.speed;
+                dy = (dy / magnitude) * player.speed;
+            }
+
             player.x += dx;
             player.y += dy;
 
-            // Clamp player position
+            // Boundary collision
             player.x = Math.max(player.radius, Math.min(WIDTH - player.radius, player.x));
             player.y = Math.max(player.radius, Math.min(HEIGHT - player.radius, player.y));
         }
 
-        function updateGameEntities() {
+        function updateZombies() {
             const now = Date.now();
 
-            // 1. Player Attack Input Handling
-            if (mouse.pressed) {
-                if (player.currentGun && player.currentGun.isMelee) {
-                    performKnifeAttack();
-                } else if (player.currentGun && !player.currentGun.isMelee) {
-                    fireBullet();
-                }
-            }
+            Object.values(zombies).forEach(zombie => {
+                // 1. Movement towards player
+                const dx = player.x - zombie.x;
+                const dy = player.y - zombie.y;
+                const dist = Math.hypot(dx, dy);
 
-            // 2. Update Bullets and Bullet-Zombie Collision
-            for (const id in bullets) {
-                const bullet = bullets[id];
-                bullet.x += bullet.vx;
-                bullet.y += bullet.vy;
+                if (dist > 0) {
+                    const vx = (dx / dist) * zombie.speed;
+                    const vy = (dy / dist) * zombie.speed;
+
+                    zombie.x += vx;
+                    zombie.y += vy;
+                    
+                    // Simple leg animation
+                    zombie.legOffset += ZOMBIE_LEG_SPEED * zombie.speed;
+                }
+
+                // 2. Collision with player (Biting)
+                if (dist < player.radius + ZOMBIE_RADIUS) {
+                    if (now - zombie.lastBite >= ZOMBIE_BITE_INTERVAL) {
+                        playerHealth -= ZOMBIE_BITE_DAMAGE;
+                        zombie.lastBite = now;
+                        if (playerHealth <= 0) gameOver();
+                    }
+                }
+            });
+        }
+
+        function updateBullets() {
+            const bulletsToRemove = [];
+            const zombiesToRemove = [];
+
+            Object.entries(bullets).forEach(([id, bullet]) => {
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
 
                 // Check boundary collision
                 if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                    delete bullets[id];
-                    continue;
+                    bulletsToRemove.push(id);
+                    return;
                 }
 
-                let bulletHit = false;
-                for (const zombieId in zombies) {
-                    const zombie = zombies[zombieId];
+                // Check collision with zombies
+                Object.entries(zombies).forEach(([zombieId, zombie]) => {
                     const dist = Math.hypot(bullet.x - zombie.x, bullet.y - zombie.y);
-                    if (dist < zombie.radius) {
+                    if (dist < bullet.radius + zombie.radius) {
                         zombie.health -= bullet.damage;
-                        bulletHit = true; 
+                        bulletsToRemove.push(id); // Hit a zombie, remove bullet
                         
                         if (zombie.health <= 0) {
-                            delete zombies[zombieId];
-                            zombiesKilledThisWave++;
-                            player.score += 10;
-                        }
-                        break;
-                    }
-                }
-                if (bulletHit) {
-                    delete bullets[id];
-                }
-            }
-
-            // 3. Update Zombies and Zombie-Player Collision
-            for (const id in zombies) {
-                const zombie = zombies[id];
-                
-                // Movement towards player
-                const dx = player.x - zombie.x;
-                const dy = player.y - zombie.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                const angle = Math.atan2(dy, dx);
-                zombie.x += Math.cos(angle) * zombie.speed;
-                zombie.y += Math.sin(angle) * zombie.speed;
-
-                // Zombie-Player collision (Bite)
-                if (distance < ZOMBIE_BITE_RADIUS) {
-                    if (now - zombie.lastBite > ZOMBIE_BITE_INTERVAL) {
-                        playerHealth -= ZOMBIE_BITE_DAMAGE;
-                        zombie.lastBite = now;
-                        if (playerHealth <= 0) {
-                            gameOver();
-                            return; // Exit if player dies
+                            zombiesToRemove.push(zombieId);
+                            player.score += 100;
+                            spawnRandomPowerup(zombie.x, zombie.y);
+                            // FIX ADDED HERE: Increment the kill count when a bullet kills a zombie
+                            zombiesKilledThisWave++; 
                         }
                     }
-                }
-                
-                // Zombie leg animation
-                zombie.legOffset = (zombie.legOffset + ZOMBIE_LEG_SPEED) % (2 * Math.PI);
-            }
+                });
+            });
+
+            bulletsToRemove.forEach(id => delete bullets[id]);
+            zombiesToRemove.forEach(id => delete zombies[id]);
+        }
+
+        function updateGrenades() {
+            const grenadesToRemove = [];
             
-            // 4. Update Grenades and Grenade Collision
-            for (const id in grenades) {
-                const grenade = grenades[id];
-
-                if (!grenade.exploded) {
-                    // Movement and friction
-                    grenade.x += grenade.vx;
-                    grenade.y += grenade.vy;
-                    grenade.vx *= GRENADE_FRICTION;
-                    grenade.vy *= GRENADE_FRICTION;
+            Object.entries(grenades).forEach(([id, grenade]) => {
+                if (!grenade.isExploding) {
+                    // Movement with friction
+                    grenade.x += grenade.dx;
+                    grenade.y += grenade.dy;
+                    grenade.dx *= GRENADE_FRICTION;
+                    grenade.dy *= GRENADE_FRICTION;
 
                     // Check for explosion time
-                    if (now - grenade.startTime > GRENADE_EXPLOSION_DELAY) {
-                        grenade.exploded = true;
-                        
-                        // Explosion logic
-                        for (const zombieId in zombies) {
-                            const zombie = zombies[zombieId];
+                    if (Date.now() >= grenade.explosionTime) {
+                        grenade.isExploding = true;
+                    }
+                } else {
+                    // Explosion logic
+                    grenade.explosionRadius += 10; // Expand explosion
+                    
+                    if (grenade.explosionRadius >= GRENADE_EXPLOSION_RADIUS) {
+                        grenadesToRemove.push(id);
+                        return;
+                    }
+                    
+                    // Damage calculation (only applied when explosion starts)
+                    if (grenade.explosionRadius === 10) { 
+                        const zombiesToRemove = [];
+                        Object.entries(zombies).forEach(([zombieId, zombie]) => {
                             const dist = Math.hypot(grenade.x - zombie.x, grenade.y - zombie.y);
-                            if (dist < GRENADE_EXPLOSION_RADIUS + zombie.radius) {
-                                // Simple distance-based damage falloff
-                                const damageFactor = 1 - (dist / (GRENADE_EXPLOSION_RADIUS + zombie.radius));
-                                zombie.health -= GRENADE_DAMAGE * damageFactor;
+                            if (dist < GRENADE_EXPLOSION_RADIUS) {
+                                // Damage is scaled by distance
+                                const distanceRatio = dist / GRENADE_EXPLOSION_RADIUS;
+                                const damage = GRENADE_DAMAGE * (1 - distanceRatio);
+                                zombie.health -= damage;
+
+                                if (zombie.health <= 0) {
+                                    zombiesToRemove.push(zombieId);
+                                    player.score += 150; // Bonus score for grenade kill
+                                    spawnRandomPowerup(zombie.x, zombie.y);
+                                    // FIX ADDED HERE: Increment the kill count when a grenade kills a zombie
+                                    zombiesKilledThisWave++; 
+                                }
                             }
-                        }
-                        // Queue up grenade removal to show explosion
-                        setTimeout(() => {
-                             delete grenades[id];
-                        }, 100); 
+                        });
+                        zombiesToRemove.forEach(id => delete zombies[id]);
                     }
                 }
-            }
-            
-            // Cleanup killed zombies after explosion/bullet loops
-            for (const id in zombies) {
-                if (zombies[id].health <= 0) {
-                    delete zombies[id];
-                    zombiesKilledThisWave++;
-                    player.score += 10;
-                }
-            }
+            });
+
+            grenadesToRemove.forEach(id => delete grenades[id]);
         }
-        
-        function updateWaveState() {
+
+        function updatePowerups() {
+            const powerupsToRemove = [];
+
+            Object.entries(powerups).forEach(([id, pu]) => {
+                // Check collision with player
+                const dist = Math.hypot(player.x - pu.x, player.y - pu.y);
+                if (dist < player.radius + pu.radius) {
+                    applyPowerupEffect(pu.config.effect);
+                    powerupsToRemove.push(id);
+                }
+            });
+
+            powerupsToRemove.forEach(id => delete powerups[id]);
+        }
+
+
+        function update() {
             const now = Date.now();
             
             if (gameState !== 'playing') return;
-            
-            // Check for wave end
-            if (waveInProgress && zombiesKilledThisWave === zombiesToSpawnThisWave && Object.keys(zombies).length === 0) {
-                waveInProgress = false;
-                waveIntermission = true;
-                intermissionStartTime = now;
-                showMessage(`Wave ${currentWave} Cleared! Preparing for Wave ${currentWave + 1}...`, INTERMISSION_DURATION);
-            }
-            
-            // Handle intermission (if all zombies killed)
-            if (waveIntermission && now - intermissionStartTime >= INTERMISSION_DURATION) {
-                nextWave();
-            }
 
-            // Spawn zombies during wave
-            if (waveInProgress && zombiesSpawnedThisWave < zombiesToSpawnThisWave) {
-                if (now - lastZombieSpawnTime > ZOMBIE_SPAWN_INTERVAL) {
+            // 1. Wave Management
+            if (waveInProgress) {
+                // Check if wave is complete
+                if (zombiesKilledThisWave === zombiesToSpawnThisWave && Object.keys(zombies).length === 0) {
+                    waveInProgress = false;
+                    waveIntermission = true;
+                    intermissionStartTime = now;
+                    showMessage(`WAVE ${currentWave} CLEARED!`, INTERMISSION_DURATION);
+                }
+
+                // Spawn zombies
+                if (now - lastZombieSpawnTime >= ZOMBIE_SPAWN_INTERVAL) {
                     spawnZombie();
                     lastZombieSpawnTime = now;
                 }
-            }
-            
-            // Update UI displays
-            waveDisplay.textContent = `Wave: ${currentWave}`;
-            zombiesLeftDisplay.textContent = `Zombies Left: ${Math.max(0, zombiesToSpawnThisWave - zombiesKilledThisWave)}`;
-            gameHealthDisplay.textContent = `Health: ${Math.max(0, Math.floor(playerHealth))}`;
-            gameScoreDisplay.textContent = `Score: ${player.score}`;
-            grenadeCountDisplay.textContent = `Grenades: ${grenadeCount}`;
-            
-            if (player.currentGun) {
-                ammoDisplay.textContent = player.currentGun.isMelee ? `Ammo: ∞` : `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
+            } else if (waveIntermission) {
+                // Intermission ends, start next wave
+                if (now - intermissionStartTime >= INTERMISSION_DURATION) {
+                    nextWave();
+                }
             } else {
-                 ammoDisplay.textContent = `Ammo: -- / --`;
-            }
-        }
-        
-        // --- Drawing Functions ---
-        
-        function drawPlayer() {
-            if (!player) return; // Safety check
-
-            // Draw health bar
-            const healthBarWidth = 30;
-            const healthBarHeight = 5;
-            const healthPercentage = playerHealth / 100;
-            
-            ctx.fillStyle = '#c0392b'; 
-            ctx.fillRect(player.x - healthBarWidth / 2, player.y - player.radius - 10, healthBarWidth, healthBarHeight);
-
-            ctx.fillStyle = '#2ecc71'; 
-            ctx.fillRect(player.x - healthBarWidth / 2, player.y - player.radius - 10, healthBarWidth * healthPercentage, healthBarHeight);
-
-            // Draw player body
-            ctx.fillStyle = player.color;
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw direction/aim line (PC only)
-            if (controlMode === 'pc') {
-                const dx = mouse.x - player.x;
-                const dy = mouse.y - player.y;
-                const angle = Math.atan2(dy, dx);
-                
-                // Draw a simple gun line
-                ctx.strokeStyle = '#f1c40f';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(player.x, player.y);
-                ctx.lineTo(player.x + Math.cos(angle) * player.radius * 2, player.y + Math.sin(angle) * player.radius * 2);
-                ctx.stroke();
-            }
-        }
-
-        function drawZombie(zombie) {
-            // Draw health bar
-            const healthBarWidth = 30;
-            const healthBarHeight = 5;
-            const healthPercentage = zombie.health / zombie.maxHealth;
-            
-            ctx.fillStyle = '#c0392b';
-            ctx.fillRect(zombie.x - healthBarWidth / 2, zombie.y - zombie.radius - 10, healthBarWidth, healthBarHeight);
-            
-            ctx.fillStyle = '#f39c12';
-            ctx.fillRect(zombie.x - healthBarWidth / 2, zombie.y - zombie.radius - 10, healthBarWidth * healthPercentage, healthBarHeight);
-
-            // Draw zombie body
-            ctx.fillStyle = zombie.color;
-            ctx.beginPath();
-            ctx.arc(zombie.x, zombie.y, zombie.radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Simple leg animation
-            const legSize = zombie.radius * 0.4;
-            ctx.fillStyle = '#34495e';
-            ctx.beginPath();
-            ctx.arc(zombie.x + Math.sin(zombie.legOffset) * ZOMBIE_LEG_AMPLITUDE * zombie.radius * 0.5, 
-                    zombie.y + zombie.radius * 0.8, legSize, 0, Math.PI * 2);
-            ctx.arc(zombie.x - Math.sin(zombie.legOffset) * ZOMBIE_LEG_AMPLITUDE * zombie.radius * 0.5, 
-                    zombie.y + zombie.radius * 0.8, legSize, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw eyes
-            ctx.fillStyle = '#c0392b';
-            ctx.beginPath();
-            ctx.arc(zombie.x - zombie.radius * 0.3, zombie.y - zombie.radius * 0.3, 3, 0, Math.PI * 2);
-            ctx.arc(zombie.x + zombie.radius * 0.3, zombie.y - zombie.radius * 0.3, 3, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawBullet(bullet) {
-            ctx.fillStyle = bullet.color;
-            ctx.beginPath();
-            ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawGrenade(grenade) {
-            // Draw explosion effect if exploded
-            if (grenade.exploded) {
-                ctx.fillStyle = 'rgba(231, 76, 60, 0.5)';
-                ctx.beginPath();
-                ctx.arc(grenade.x, grenade.y, GRENADE_EXPLOSION_RADIUS, 0, Math.PI * 2);
-                ctx.fill();
+                // Game just started or reset, start first wave intermission
+                waveIntermission = true;
+                intermissionStartTime = now;
             }
 
-            // Draw grenade body
-            ctx.fillStyle = grenade.color;
-            ctx.beginPath();
-            ctx.arc(grenade.x, grenade.y, GRENADE_RADIUS, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function draw() {
-            // 1. Always clear the canvas first
-            ctx.clearRect(0, 0, WIDTH, HEIGHT); 
-
-            // 2. ONLY draw the game entities if the state is 'playing'
-            if (gameState !== 'playing') return; 
-
-            // Draw Entities (Order matters: Grenades -> Zombies -> Bullets -> Player)
-            for (const id in grenades) { drawGrenade(grenades[id]); }
-            for (const id in zombies) { drawZombie(zombies[id]); }
-            for (const id in bullets) { drawBullet(bullets[id]); }
-            drawPlayer();
-        }
-
-        // --- Main Game Loop ---
-        let lastTime = 0;
-        
-        function gameLoop(currentTime) {
-            if (gameState !== 'playing') {
-                 // Important: Still request frame to re-enter loop if state changes later
-                 gameLoopHandle = requestAnimationFrame(gameLoop); 
-                 return;
+            // 2. Input Handling (Shooting)
+            if (mouse.pressed) {
+                shoot();
             }
 
-            // Update logic is independent of time in this fixed-speed game
-            // but deltaTime calculation is good practice.
-            const deltaTime = currentTime - lastTime;
-            lastTime = currentTime;
-
-            // 1. Update Position & Input
+            // 3. Entity Updates
             updatePlayerPosition();
+            updateZombies();
+            updateBullets();
+            updateGrenades();
+            updatePowerups();
             
-            // 2. Update Entities
-            updateGameEntities();
-            
-            // 3. Game State
-            updateWaveState();
+            updateUI();
+        }
 
-            // 4. Draw
-            draw();
+        // --- Game Loop ---
+        function gameLoop() {
+            // Clear canvas
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            update();
+
+            // Draw entities
+            drawBullets();
+            drawGrenades();
+            drawZombies();
+            drawPlayer();
+            drawPowerups();
 
             gameLoopHandle = requestAnimationFrame(gameLoop);
         }
 
-        // --- Event Listeners ---
-        
-        window.addEventListener('keydown', (e) => {
-            if (controlMode === 'pc' && gameState === 'playing') {
-                keys[e.code] = true;
-                if (e.code === 'KeyG') {
-                    throwGrenade();
-                }
-                if (e.code === 'KeyM' && player.currentGun.name === 'Knife') {
-                    // Knife logic is now handled by mouse down/key down in the game loop for consistency,
-                    // but we ensure immediate action on key press
-                    performKnifeAttack();
-                }
-            }
+        // --- Event Listeners and Setup ---
+
+        // Control Mode Selection (PC Mode only for now)
+        document.getElementById('pcModeButton').addEventListener('click', () => {
+            controlMode = 'pc';
+            document.querySelectorAll('#controlModeSelection button').forEach(btn => btn.classList.remove('selected-control'));
+            document.getElementById('pcModeButton').classList.add('selected-control');
         });
 
-        window.addEventListener('keyup', (e) => {
-            if (controlMode === 'pc' && gameState === 'playing') {
-                keys[e.code] = false;
-            }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (controlMode === 'pc' && gameState === 'playing') {
-                const rect = canvas.getBoundingClientRect();
-                mouse.x = e.clientX - rect.left;
-                mouse.y = e.clientY - rect.top;
-            }
-        });
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (controlMode === 'pc' && gameState === 'playing' && e.button === 0) {
-                mouse.pressed = true;
-            }
-        });
-
-        canvas.addEventListener('mouseup', (e) => {
-            if (controlMode === 'pc' && gameState === 'playing' && e.button === 0) {
-                mouse.pressed = false;
-            }
-        });
-
-        // Start/Restart logic
-        startGameButton.addEventListener('click', startGame);
-
-        restartGameButton.addEventListener('click', () => {
-            initGame();
-        });
-
-        // Gun selection logic
+        // Gun Selection
         gunCards.forEach(card => {
             card.addEventListener('click', () => {
+                const gunKey = card.getAttribute('data-gun');
+                player.currentGun = guns[gunKey];
+                
                 gunCards.forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
-                const selectedGunType = card.dataset.gun;
                 
-                const gunConfig = guns[selectedGunType];
-                player.currentGun = gunConfig;
-
-                playerAmmo = gunConfig.isMelee ? Infinity : gunConfig.maxAmmo;
-                
-                currentWeaponDisplay.textContent = `Weapon: ${player.currentGun.name}`;
-                ammoDisplay.textContent = player.currentGun.isMelee ? `Ammo: ∞` : `Ammo: ${playerAmmo} / ${player.currentGun.maxAmmo}`;
                 startGameButton.disabled = false;
             });
         });
 
-        // Initial setup run
-        initGame();
+        // Start/Restart Game Buttons
+        startGameButton.addEventListener('click', startGame);
+        restartGameButton.addEventListener('click', restartGame);
+
+        // Keyboard Input
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Mouse Input (Shooting)
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0) mouse.pressed = true; // Left click
+            if (e.button === 2) throwGrenade(); // Right click
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) mouse.pressed = false;
+        });
+
+        // Prevent right-click context menu
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Initialize UI on load
+        updateUI();
+        gameState = 'start'; // Ensure the game starts in the menu state
+
+        // Start the game loop only after button click (handled in startGame)
     </script>
 </body>
 </html>
