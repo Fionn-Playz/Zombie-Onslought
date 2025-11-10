@@ -91,6 +91,7 @@
     const ZOMBIE_BITE_DAMAGE = 8; 
     const ZOMBIE_LEG_AMPLITUDE = 0.8;
     const ZOMBIE_LEG_SPEED = 0.05;
+    const ZOMBIE_BITE_INTERVAL = 1000; 
     const HEADSHOT_MULTIPLIER = 3;
 
     const INTERMISSION_DURATION = 3000;
@@ -374,10 +375,12 @@
     }
 
     function stopBleeding() {
-        isBleeding = false;
-        bleedStartTime = 0;
-        player.color = '#3498db'; // Reset player color immediately
-        showMessage("Bleeding stopped. Phew!", 1500);
+        if (isBleeding) {
+            isBleeding = false;
+            bleedStartTime = 0;
+            player.color = '#3498db'; // Reset player color immediately
+            showMessage("Bleeding stopped. Phew!", 1500);
+        }
     }
 
     function applyBleedingDamage() {
@@ -442,16 +445,20 @@
     }
 
     function applyPowerupEffect(effect) {
+        // Returns false if item fails to be collected (e.g., inventory full)
         if (effect === 'health') {
-            addToInventory('health', 1);
+            return addToInventory('health', 1);
         } else if (effect === 'grenade') {
             grenadeCount += 2; 
             showMessage("GRENADE SUPPLY (+2)", 1000);
+            return true;
         } else if (effect === 'laser') {
             activateLaser();
+            return true;
         } else if (effect === 'medkit') {
-            addToInventory('medkit', 1);
+            return addToInventory('medkit', 1);
         }
+        return true;
     }
 
     function activateLaser() {
@@ -653,6 +660,7 @@
                 player.lastKnifeTime = now;
                 player.score += 5;
 
+                // Visual Knife Effect (CSS-based)
                 knifeEffectElement.style.display = 'block';
                 knifeEffectElement.style.width = `${KNIFE_RADIUS * 2}px`;
                 knifeEffectElement.style.height = `${KNIFE_RADIUS * 2}px`;
@@ -759,30 +767,33 @@
         player.score += 10;
     }
 
-    // --- Drawing Functions ---
+    // --- Drawing Functions (Includes Realism/Textures) ---
 
     function drawPlayer() {
         ctx.save();
         
+        // 1. Shadow for depth 
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.shadowBlur = 8;
         ctx.shadowOffsetX = 3;
         ctx.shadowOffsetY = 3;
 
+        // 2. Graded Body (Simulate roundness/lighting)
         const gradient = ctx.createRadialGradient(
             player.x - player.radius / 3, player.y - player.radius / 3, player.radius / 5,
             player.x, player.y, player.radius
         );
-        gradient.addColorStop(0, '#5D93C9'); 
-        gradient.addColorStop(1, player.color); 
+        gradient.addColorStop(0, '#5D93C9'); // Lighter highlight
+        gradient.addColorStop(1, player.color); // Base color
         
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
         ctx.fill();
         
-        ctx.restore(); 
+        ctx.restore(); // Remove shadow for non-player elements
 
+        // 3. Draw Barrel 
         const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
         const barrelLength = player.radius + 10;
         const barrelWidth = 5;
@@ -794,9 +805,10 @@
         ctx.translate(barrelX, barrelY);
         ctx.rotate(angle);
         
+        // Barrel texture (simple metal look)
         const barrelGradient = ctx.createLinearGradient(0, -barrelWidth / 2, barrelLength, barrelWidth / 2);
-        barrelGradient.addColorStop(0, '#bdc3c7'); 
-        barrelGradient.addColorStop(0.5, '#7f8c8d'); 
+        barrelGradient.addColorStop(0, '#bdc3c7'); // Light metal
+        barrelGradient.addColorStop(0.5, '#7f8c8d'); // Dark metal
         barrelGradient.addColorStop(1, '#bdc3c7');
 
         ctx.fillStyle = barrelGradient;
@@ -827,7 +839,7 @@
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 2;
 
-            // 1. Graded Body (Color determined by type config)
+            // 1. Graded Body (Color determined by type config - Rotten/Wet look)
             const bodyColor = ZOMBIE_TYPES[zombie.type].color;
             const bodyGradient = ctx.createRadialGradient(
                 zombie.x, zombie.y, zombie.radius * 0.5,
@@ -848,7 +860,7 @@
             const headX = zombie.x + Math.cos(angle) * (zombie.radius * 0.5);
             const headY = zombie.y + Math.sin(angle) * (zombie.radius * 0.5);
 
-            // Head texture 
+            // Head texture (Bone/Skull color)
             const headGradient = ctx.createRadialGradient(
                 headX - zombie.headRadius / 3, headY - zombie.headRadius / 3, zombie.headRadius * 0.1,
                 headX, headY, zombie.headRadius
@@ -861,7 +873,7 @@
             ctx.arc(headX, headY, zombie.headRadius, 0, Math.PI * 2);
             ctx.fill();
 
-            // 3. Eyes 
+            // 3. Eyes (Red and angry)
             ctx.fillStyle = '#c0392b';
             const eyeDist = zombie.headRadius * 0.5;
             const eyeRadius = zombie.headRadius * 0.3;
@@ -1211,9 +1223,7 @@
                 
                 const collected = applyPowerupEffect(powerup.config.effect);
                 
-                // Only remove the powerup if it was actually collected/used (Laser/Grenade)
-                // or successfully added to the inventory (Health/Medkit)
-                if (collected !== false) {
+                if (collected) {
                     powerupsToRemove.push(id);
                 }
             }
